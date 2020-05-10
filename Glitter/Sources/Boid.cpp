@@ -9,12 +9,12 @@
 static glm::vec2 yaxis = glm::vec2(0.0f, 1.0f);
 
 void Boid::Draw(EntityRenderer *renderer) {
-    renderer->Draw(this->position, this->rotation);
+    renderer->Draw(this->position, this->rotation, this->color);
 }
 
 void Boid::Update(glm::vec2 force, float dt) {
     this->velocity += force * dt;
-    glm::vec2 change = velocity * dt;
+    glm::vec2 change = this->velocity * dt;
     this->position += change;
     // Now calculate direction of movement
     glm::vec2 dir = glm::normalize(this->velocity);

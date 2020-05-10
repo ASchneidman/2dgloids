@@ -18,12 +18,14 @@ private:
     // Inferred from movement, about z-axis
     float rotation;
     float width, height;
+    glm::vec3 color;
 public:
     Boid(glm::vec2 &initialPos, glm::vec2 &initialVel,
             float width, float height): width(width), height(height) {
         this->position = initialPos;
         velocity = initialVel;
         this->rotation = M_PI;
+        this->color = glm::vec3((rand() % 10) / 9.0f, (rand() % 10) / 9.0f, (rand() % 10) / 9.0f);
     }
     ~Boid() = default;
     void Draw(EntityRenderer *renderer);

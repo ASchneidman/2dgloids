@@ -64,3 +64,7 @@ void EntityRenderer::Draw(glm::vec2 &pos, float rotate) {
             glm::vec2(ER_DEFAULT_SIZE, ER_DEFAULT_SIZE),
             rotate, glm::vec3(1.0f, 0.0f, 0.0f));
 }
+
+void EntityRenderer::Draw(glm::vec2 &pos, float rotate, glm::vec3 color) {
+    this->Draw(pos, glm::vec2(ER_DEFAULT_SIZE, ER_DEFAULT_SIZE), rotate, color);
+}

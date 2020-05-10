@@ -8,7 +8,7 @@
 
 #include "shader.h"
 
-#define ER_DEFAULT_SIZE 25.0f
+#define ER_DEFAULT_SIZE 10.0f
 #define ER_DEFAULT_ROT 0.0f
 
 class EntityRenderer {
@@ -22,6 +22,9 @@ public:
               glm::vec3 color = glm::vec3(1.0f, 0.0f, 0.0f));
     void Draw(glm::vec2 &pos,
               float rotate);
+    void Draw(glm::vec2 &pos,
+                float rotate,
+                glm::vec3 color);
 private:
     Shader shader;
     GLuint VAO;
