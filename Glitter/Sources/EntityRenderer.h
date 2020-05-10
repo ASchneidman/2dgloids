@@ -8,7 +8,7 @@
 
 #include "shader.h"
 
-#define ER_DEFAULT_SIZE 50.0f
+#define ER_DEFAULT_SIZE 25.0f
 #define ER_DEFAULT_ROT 0.0f
 
 class EntityRenderer {

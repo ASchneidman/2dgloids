@@ -28,6 +28,7 @@ public:
     ~Boid() = default;
     void Draw(EntityRenderer *renderer);
     void Update(glm::vec2 force, float dt);
+    float GetX(); float GetY();
 };
 
 
