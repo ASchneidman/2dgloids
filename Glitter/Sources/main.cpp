@@ -1,5 +1,6 @@
 // Local Headers
 #include "glitter.hpp"
+#include "State.h"
 
 // System Headers
 #include <glad/glad.h>
@@ -8,6 +9,14 @@
 // Standard Headers
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
+
+// The Width of the screen
+const unsigned int SCREEN_WIDTH = 1080;
+// The height of the screen
+const unsigned int SCREEN_HEIGHT = 900;
+
+State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
 int main(int argc, char * argv[]) {
 
@@ -18,7 +27,7 @@ int main(int argc, char * argv[]) {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    auto mWindow = glfwCreateWindow(mWidth, mHeight, "OpenGL", nullptr, nullptr);
+    auto mWindow = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "OpenGL", nullptr, nullptr);
 
     // Check for Valid Context
     if (mWindow == nullptr) {
@@ -31,14 +40,30 @@ int main(int argc, char * argv[]) {
     gladLoadGL();
     fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 
+    state.Init();
+
+    // deltaTime variables
+    // -------------------
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
+
     // Rendering Loop
     while (glfwWindowShouldClose(mWindow) == false) {
+        // calculate delta time
+        // --------------------
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
         if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(mWindow, true);
 
         // Background Fill Color
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        state.Update(deltaTime);
+        state.Render();
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);

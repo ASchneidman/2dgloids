@@ -57,7 +57,7 @@ add_definitions(-DGLFW_INCLUDE_NONE
                 -DPROJECT_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\")
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS}
                                ${PROJECT_SHADERS} ${PROJECT_CONFIGS}
-                               ${VENDORS_SOURCES})
+                               ${VENDORS_SOURCES} Glitter/Sources/State.cpp Glitter/Sources/State.h Glitter/Sources/shader.cpp Glitter/Sources/shader.h Glitter/Sources/resourcemanager.cpp Glitter/Sources/resourcemanager.h Glitter/Sources/EntityRenderer.cpp Glitter/Sources/EntityRenderer.h Glitter/Sources/Boid.cpp Glitter/Sources/Boid.h)
 target_link_libraries(${PROJECT_NAME} assimp glfw
                       ${GLFW_LIBRARIES} ${GLAD_LIBRARIES}
                       BulletDynamics BulletCollision LinearMath)
