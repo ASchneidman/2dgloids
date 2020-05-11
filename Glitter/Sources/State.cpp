@@ -8,15 +8,14 @@
 #include <map>
 #include <iterator>
 
-#define NUM_BOIDS 50
+#define NUM_BOIDS 100
 #define BOID_SPEED 100.0f
 //#define MAP_SQUARES_X 250
 //#define MAP_SQUARES_Y 90
-#define FORCE_SCALING (1.0f)
 
 #define COLLISION_WEIGHT (1000000.0f)
-#define ALIGN_WEIGHT (1000.0f)
-#define POSITION_WEIGHT (10000000.0f)
+#define ALIGN_WEIGHT (500.0f)
+#define POSITION_WEIGHT (200000.0f)
 
 #define NEARBY_DIST 250.0f
 
@@ -104,7 +103,7 @@ void State::Update(GLfloat dt) {
 
             dir = glm::normalize(avgPos - myPos);
             float dist = glm::distance(myPos, avgPos);
-            float scaling = (1.0f / (dist * dist));
+            float scaling = (1.0f / (dist));
             forcePos = dir * scaling;
         }
 

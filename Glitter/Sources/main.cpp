@@ -12,9 +12,9 @@
 #include <iostream>
 
 // The Width of the screen
-const unsigned int SCREEN_WIDTH = 1000;
+const unsigned int SCREEN_WIDTH = 3000;
 // The height of the screen
-const unsigned int SCREEN_HEIGHT = 900;
+const unsigned int SCREEN_HEIGHT = 1000;
 
 State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
