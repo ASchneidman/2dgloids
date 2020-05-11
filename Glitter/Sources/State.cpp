@@ -8,12 +8,17 @@
 #include <map>
 #include <iterator>
 
-#define NUM_BOIDS 100
+#define NUM_BOIDS 50
 #define BOID_SPEED 100.0f
-#define MAP_SQUARES_X 250
-#define MAP_SQUARES_Y 90
-#define FORCE_SCALING (1809025.0f)
-#define MAX_FORCE (10000.0f)
+//#define MAP_SQUARES_X 250
+//#define MAP_SQUARES_Y 90
+#define FORCE_SCALING (1.0f)
+
+#define COLLISION_WEIGHT (1000000.0f)
+#define ALIGN_WEIGHT (1000.0f)
+#define POSITION_WEIGHT (10000000.0f)
+
+#define NEARBY_DIST 250.0f
 
 EntityRenderer *Renderer;
 std::default_random_engine generator;
@@ -24,8 +29,8 @@ static std::map<int, std::map<int, std::map<long, Boid *>>> boidMap;
 State::State(GLuint width, GLuint height) : Width(width), Height(height) {}
 
 void State::Init() {
-    assert((this->Width % MAP_SQUARES_X) == 0);
-    assert((this->Height % MAP_SQUARES_Y) == 0);
+    //assert((this->Width % MAP_SQUARES_X) == 0);
+    //assert((this->Height % MAP_SQUARES_Y) == 0);
 
     // load shaders
     ResourceManager::LoadShader("entity.vert", "entity.frag", nullptr, "entity");
@@ -53,18 +58,59 @@ void State::Init() {
 
 void State::Update(GLfloat dt) {
     std::map<Boid *, glm::vec2> forces;
+
     for (Boid *b : this->boids) {
         glm::vec2 myPos(b->GetX(), b->GetY());
-        glm::vec2 force(0.0f, 0.0f);
+        glm::vec2 forceCollision(0.0f, 0.0f);
+        glm::vec2 forceAlign;
+        glm::vec2 forcePos;
+
+        float avgVX, avgVY;
+        float avgX, avgY;
+
+        int numClose = 0;
+
         for (Boid *other : this->boids) {
             if (b == other)
                 continue;
+
+            // Collision avoidance
             glm::vec2 otherPos(other->GetX(), other->GetY());
             glm::vec2 dir = glm::normalize(myPos - otherPos);
             float dist = glm::distance(otherPos, myPos);
-            float scaling = std::min(FORCE_SCALING * (1.0f / (dist * dist)), MAX_FORCE);
-            force += dir * scaling;
+            if (dist < NEARBY_DIST) {
+                avgVX += other->GetVelocity().x; avgVY += other->GetVelocity().y;
+                avgX += other->GetX(); avgY += other->GetY();
+                numClose += 1;
+                float scaling = (1.0f / (dist * dist));
+                forceCollision += dir * scaling;
+            }
         }
+
+        printf("%d\n", numClose);
+        if (numClose > 0) {
+            avgVX /= numClose;
+            avgVY /= numClose;
+            avgX /= numClose;
+            avgY /= numClose;
+
+            glm::vec2 avgVel(avgVX, avgVY);
+            glm::vec2 avgPos(avgX, avgY);
+            // Incorporate avg velocity
+            glm::vec2 dir = glm::normalize(avgVel - b->GetVelocity());
+            forceAlign = dir;
+
+            // Incorporate average flock position
+
+            dir = glm::normalize(avgPos - myPos);
+            float dist = glm::distance(myPos, avgPos);
+            float scaling = (1.0f / (dist * dist));
+            forcePos = dir * scaling;
+        }
+
+        // Average forces
+        glm::vec2 force = COLLISION_WEIGHT * forceCollision + ALIGN_WEIGHT * forceAlign + POSITION_WEIGHT * forcePos;
+
         /*
         // Find nearest neighbors
         int xBox = (int) (b->GetX() / MAP_SQUARES_X);

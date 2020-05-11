@@ -14,6 +14,9 @@ void Boid::Draw(EntityRenderer *renderer) {
 
 void Boid::Update(glm::vec2 force, float dt) {
     this->velocity += force * dt;
+    if (glm::length(this->velocity) > MAX_VELOCITY) {
+        this->velocity = glm::normalize(this->velocity) * MAX_VELOCITY;
+    }
     glm::vec2 change = this->velocity * dt;
     this->position += change;
     // Now calculate direction of movement
@@ -34,5 +37,9 @@ float Boid::GetX() {
 
 float Boid::GetY() {
     return this->position.y;
+}
+
+glm::vec2 Boid::GetVelocity() {
+    return this->velocity;
 }
 

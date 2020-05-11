@@ -9,6 +9,8 @@
 #include <glm/vec2.hpp>
 #include "EntityRenderer.h"
 
+#define MAX_VELOCITY 500.0f
+
 class Boid {
 private:
     // Each iteration, a random force is chosen. This is
@@ -31,6 +33,7 @@ public:
     void Draw(EntityRenderer *renderer);
     void Update(glm::vec2 force, float dt);
     float GetX(); float GetY();
+    glm::vec2 GetVelocity();
 };
 
 
