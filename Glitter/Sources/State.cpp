@@ -17,6 +17,9 @@
 #define ALIGN_WEIGHT (500.0f)
 #define POSITION_WEIGHT (200000.0f)
 
+#define FORCE_CAP 1000.0f
+#define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
+
 #define NEARBY_DIST 250.0f
 
 EntityRenderer *Renderer;
@@ -86,7 +89,6 @@ void State::Update(GLfloat dt) {
             }
         }
 
-        printf("%d\n", numClose);
         if (numClose > 0) {
             avgVX /= numClose;
             avgVY /= numClose;
@@ -109,6 +111,7 @@ void State::Update(GLfloat dt) {
 
         // Average forces
         glm::vec2 force = COLLISION_WEIGHT * forceCollision + ALIGN_WEIGHT * forceAlign + POSITION_WEIGHT * forcePos;
+        force = glm::vec2(SIGN(force.x) * std::min(std::abs(force.x), FORCE_CAP), SIGN(force.y) * std::min(std::abs(force.y), FORCE_CAP));
 
         /*
         // Find nearest neighbors
