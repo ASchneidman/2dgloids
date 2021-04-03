@@ -8,8 +8,9 @@
 #include <map>
 #include <iterator>
 #include <iostream>
+#include <omp.h>
 
-#define NUM_BOIDS 100
+#define NUM_BOIDS 1000
 #define BOID_SPEED 10.0f
 
 #define COLLISION_WEIGHT (1.3f)
@@ -75,7 +76,10 @@ void State::Update(GLfloat dt) {
 
         int numClose = 0;
 
-        for (Boid *other : this->boids) {
+        #pragma omp parallel for
+        //for (Boid *other : this->boids) {
+        for (int i = 0; i < this->boids.size(); i++) {
+            Boid *other = this->boids[i];
             if (b == other)
                 continue;
 

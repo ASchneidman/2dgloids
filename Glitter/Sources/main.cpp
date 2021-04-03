@@ -12,9 +12,9 @@
 #include <iostream>
 
 // The Width of the screen
-const unsigned int SCREEN_WIDTH = 1500;
+const unsigned int SCREEN_WIDTH = 2000;
 // The height of the screen
-const unsigned int SCREEN_HEIGHT = 800;
+const unsigned int SCREEN_HEIGHT = 2000;
 
 State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -47,13 +47,17 @@ int main(int argc, char * argv[]) {
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
 
+    float averageFrameTime = 0.0f;
+
     // Rendering Loop
+    int i = 0;
     while (glfwWindowShouldClose(mWindow) == false) {
         // calculate delta time
         // --------------------
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        averageFrameTime += deltaTime;
 
         if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(mWindow, true);
@@ -68,6 +72,7 @@ int main(int argc, char * argv[]) {
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
+        i += 1;
     }   glfwTerminate();
     return EXIT_SUCCESS;
 }
