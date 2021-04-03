@@ -9,13 +9,12 @@
 #include <iterator>
 #include <iostream>
 
-#define NUM_BOIDS 20
+#define NUM_BOIDS 100
 #define BOID_SPEED 10.0f
 
-#define COLLISION_WEIGHT (1.0f)
-#define ALIGN_WEIGHT (1.0f)
-#define POSITION_WEIGHT (1.0f)
-#define RANDOM_WEIGHT (0.0f)
+#define COLLISION_WEIGHT (1.3f)
+#define ALIGN_WEIGHT (1.5f)
+#define POSITION_WEIGHT (1.5f)
 
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
 
@@ -47,8 +46,6 @@ void State::Init() {
 
     std::uniform_real_distribution<float> posDistX(0.0f, this->Width-1);
     std::uniform_real_distribution<float> posDistY(0.0f, this->Height-1);
-    //std::uniform_real_distribution<float> posDistX(this->Width/2-10, this->Width/2+10);
-    //std::uniform_real_distribution<float> posDistY(this->Height/2-10, this->Height/2+10);
 
 
     std::uniform_real_distribution<float> randSpeed(0.0f, BOID_SPEED);
@@ -75,8 +72,6 @@ void State::Update(GLfloat dt) {
 
         glm::vec2 flockCenter(0.0, 0.0);
         glm::vec2 flockHeading(0.0, 0.0);
-        //float avgVX, avgVY;
-        //float avgX, avgY;
 
         int numClose = 0;
 
@@ -89,10 +84,8 @@ void State::Update(GLfloat dt) {
             float dist = glm::distance(other->position, b->position);
             // dir is already normalized, so dont need to take norm
             if (dist < NEARBY_DIST) {
-                //avgVX += other->GetVelocity().x; avgVY += other->GetVelocity().y;
                 flockCenter += other->position;
                 flockHeading += glm::normalize(other->velocity);
-                //avgX += other->GetX(); avgY += other->GetY();
                 numClose += 1;
                 float scaling = (1.0f / (dist * dist));
                 forceCollision += dir * scaling;
@@ -116,10 +109,6 @@ void State::Update(GLfloat dt) {
 
             force = forceCollision + forceAlign + forcePos;
         }
-        float theta = randDir(generator);
-        forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
-        forceRand *= RANDOM_WEIGHT;
-        force += forceRand;
 
         forces[b] = force;
     }

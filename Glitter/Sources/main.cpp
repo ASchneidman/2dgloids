@@ -12,7 +12,7 @@
 #include <iostream>
 
 // The Width of the screen
-const unsigned int SCREEN_WIDTH = 1000;
+const unsigned int SCREEN_WIDTH = 1500;
 // The height of the screen
 const unsigned int SCREEN_HEIGHT = 800;
 
@@ -48,7 +48,6 @@ int main(int argc, char * argv[]) {
     float lastFrame = 0.0f;
 
     // Rendering Loop
-    int i = 0;
     while (glfwWindowShouldClose(mWindow) == false) {
         // calculate delta time
         // --------------------
@@ -69,7 +68,6 @@ int main(int argc, char * argv[]) {
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
-        i += 1;
     }   glfwTerminate();
     return EXIT_SUCCESS;
 }
