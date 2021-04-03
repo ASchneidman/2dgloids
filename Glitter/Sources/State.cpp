@@ -76,8 +76,6 @@ void State::Update(GLfloat dt) {
 
         int numClose = 0;
 
-        #pragma omp parallel for
-        //for (Boid *other : this->boids) {
         for (int i = 0; i < this->boids.size(); i++) {
             Boid *other = this->boids[i];
             if (b == other)
