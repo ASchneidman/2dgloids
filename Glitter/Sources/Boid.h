@@ -20,7 +20,8 @@ public:
         this->position = initialPos;
         velocity = initialVel;
         this->rotation = M_PI;
-        this->color = glm::vec3((rand() % 10) / 9.0f, (rand() % 10) / 9.0f, (rand() % 10) / 9.0f);
+        //this->color = glm::vec3((rand() % 10) / 9.0f, (rand() % 10) / 9.0f, (rand() % 10) / 9.0f);
+        this->color = glm::vec3(1.0f, 1.0f, 1.0f);
     }
     ~Boid() = default;
     void Draw(EntityRenderer *renderer);
@@ -36,6 +37,8 @@ public:
     float rotation;
     float width, height;
     glm::vec3 color;
+    
+    bool predator = false;
 };
 
 

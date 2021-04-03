@@ -14,7 +14,7 @@
 // The Width of the screen
 const unsigned int SCREEN_WIDTH = 2000;
 // The height of the screen
-const unsigned int SCREEN_HEIGHT = 2000;
+const unsigned int SCREEN_HEIGHT = 1000;
 
 State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -57,7 +57,6 @@ int main(int argc, char * argv[]) {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        averageFrameTime += deltaTime;
 
         if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(mWindow, true);
@@ -66,13 +65,16 @@ int main(int argc, char * argv[]) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        float c = glfwGetTime();
         state.Update(deltaTime);
         state.Render();
+        printf("Frame time: %.3f\n", glfwGetTime() - c);
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
-        i += 1;
+        
+        i+=1;
     }   glfwTerminate();
     return EXIT_SUCCESS;
 }

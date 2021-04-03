@@ -42,6 +42,18 @@ void Boid::Update(glm::vec2 force, float dt) {
     }
     this->position = glm::vec2(WRAP_VALUES(this->position.x, this->width),
                                 WRAP_VALUES(this->position.y, this->height));
+
+
+    //glm::vec2 norm_pos = glm::normalize(position);
+    //this->color.x = norm_pos.x;
+    //this->color.y = norm_pos.y;
+
+    this->color.x = 1;
+    this->color.y = 1;
+    this->color.z = 1;
+
+    this->color *= glm::length(velocity) / MAX_VELOCITY;
+    this->color *= glm::length(velocity) / MAX_VELOCITY;
                                 
 }
 

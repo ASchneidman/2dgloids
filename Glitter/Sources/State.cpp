@@ -10,7 +10,7 @@
 #include <iostream>
 #include <omp.h>
 
-#define NUM_BOIDS 1000
+#define NUM_BOIDS 500
 #define BOID_SPEED 10.0f
 
 #define COLLISION_WEIGHT (1.3f)
@@ -24,6 +24,8 @@
 #define LINE_OF_SIGHT (3.0 * glm::pi<float>() / 4.0)
 
 std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
+std::uniform_real_distribution<float> randSpeed(0.0f, BOID_SPEED);
+
 
 
 EntityRenderer *Renderer;
@@ -49,7 +51,6 @@ void State::Init() {
     std::uniform_real_distribution<float> posDistY(0.0f, this->Height-1);
 
 
-    std::uniform_real_distribution<float> randSpeed(0.0f, BOID_SPEED);
 
 
     for (int i = 0; i < NUM_BOIDS; i++) {
@@ -60,10 +61,14 @@ void State::Init() {
         glm::vec2 initialVel = initVel * randSpeed(generator);
         this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height));
     }
+
+    this->boids[0]->predator = true;
+    this->boids[0]->color = glm::vec3(5.0, 0.0, 0.0);
 }
 
 void State::Update(GLfloat dt) {
     std::map<Boid *, glm::vec2> forces;
+
     for (Boid *b : this->boids) {
         glm::vec2 forceCollision(0.0f, 0.0f);
         glm::vec2 forceAlign;
@@ -76,8 +81,6 @@ void State::Update(GLfloat dt) {
 
         int numClose = 0;
 
-        #pragma omp parallel for
-        //for (Boid *other : this->boids) {
         for (int i = 0; i < this->boids.size(); i++) {
             Boid *other = this->boids[i];
             if (b == other)
@@ -92,7 +95,12 @@ void State::Update(GLfloat dt) {
                 flockHeading += glm::normalize(other->velocity);
                 numClose += 1;
                 float scaling = (1.0f / (dist * dist));
-                forceCollision += dir * scaling;
+                if (other->predator) {
+                    scaling *= 250;
+                    forceCollision += dir * scaling;
+                } else {
+                    forceCollision += dir * scaling;
+                }
             }
         }
 
@@ -114,9 +122,19 @@ void State::Update(GLfloat dt) {
             force = forceCollision + forceAlign + forcePos;
         }
 
+
+        if (b->predator) {
+            std::uniform_real_distribution<float> speed(0.0f, BOID_SPEED);
+            float theta = speed(generator);
+            glm::vec2 dir(glm::sin(theta), glm::cos(theta));
+            dir *= randSpeed(generator);
+            force += dir;
+        }
+
         forces[b] = force;
     }
-    for (Boid *b : this->boids) {
+    for (int i = 0; i < this->boids.size(); i++) {
+        Boid *b = boids[i];
         b->Update(forces[b], dt);
     }
 }
