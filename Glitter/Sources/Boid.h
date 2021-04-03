@@ -10,6 +10,7 @@
 #include "EntityRenderer.h"
 
 #define MAX_VELOCITY 500.0f
+#define MAX_FORCE 500.0f
 
 class Boid {
 private:
@@ -33,6 +34,7 @@ public:
     void Draw(EntityRenderer *renderer);
     void Update(glm::vec2 force, float dt);
     float GetX(); float GetY();
+    glm::vec2 SteerToward(glm::vec2 force);
     glm::vec2 GetVelocity();
 };
 

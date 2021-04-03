@@ -7,20 +7,24 @@
 #include <random>
 #include <map>
 #include <iterator>
+#include <iostream>
 
 #define NUM_BOIDS 100
-#define BOID_SPEED 100.0f
-//#define MAP_SQUARES_X 250
-//#define MAP_SQUARES_Y 90
+#define BOID_SPEED 10.0f
 
-#define COLLISION_WEIGHT (1000000.0f)
-#define ALIGN_WEIGHT (500.0f)
-#define POSITION_WEIGHT (200000.0f)
+#define COLLISION_WEIGHT (1.0f)
+#define ALIGN_WEIGHT (1.5f)
+#define POSITION_WEIGHT (1.5f)
+#define RANDOM_WEIGHT (0.0f)
 
-#define FORCE_CAP 1000.0f
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
 
 #define NEARBY_DIST 250.0f
+
+#define LINE_OF_SIGHT (3.0 * glm::pi<float>() / 4.0)
+
+std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
+
 
 EntityRenderer *Renderer;
 std::default_random_engine generator;
@@ -31,11 +35,8 @@ static std::map<int, std::map<int, std::map<long, Boid *>>> boidMap;
 State::State(GLuint width, GLuint height) : Width(width), Height(height) {}
 
 void State::Init() {
-    //assert((this->Width % MAP_SQUARES_X) == 0);
-    //assert((this->Height % MAP_SQUARES_Y) == 0);
-
     // load shaders
-    ResourceManager::LoadShader("entity.vert", "entity.frag", nullptr, "entity");
+    ResourceManager::LoadShader("Glitter/entity.vert", "Glitter/entity.frag", nullptr, "entity");
     // configure shaders
     glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(this->Width),
                                       static_cast<float>(this->Height), 0.0f, -1.0f, 1.0f);
@@ -47,25 +48,28 @@ void State::Init() {
     std::uniform_real_distribution<float> posDistX(0.0f, this->Width-1);
     std::uniform_real_distribution<float> posDistY(0.0f, this->Height-1);
 
-    std::uniform_real_distribution<float> randDir(-1.0f, 1.0f);
+    std::uniform_real_distribution<float> randSpeed(0.0f, BOID_SPEED);
+
 
     for (int i = 0; i < NUM_BOIDS; i++) {
         glm::vec2 initPos = glm::vec2(posDistX(generator), posDistY(generator));
-        glm::vec2 initialVel = glm::normalize(glm::vec2(randDir(generator), randDir(generator))) * BOID_SPEED;
+        float theta = randDir(generator);
+        glm::vec2 initVel = glm::vec2(glm::sin(theta), glm::cos(theta));
+    
+        glm::vec2 initialVel = glm::normalize(initVel * randSpeed(generator));
         this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height));
-
-        //boidMap[(int)(initPos.x / MAP_SQUARES_X)][(int)(initPos.y / MAP_SQUARES_Y)][(long)this->boids.at(i)] = (this->boids.at(i));
     }
 }
 
 void State::Update(GLfloat dt) {
     std::map<Boid *, glm::vec2> forces;
-
     for (Boid *b : this->boids) {
         glm::vec2 myPos(b->GetX(), b->GetY());
         glm::vec2 forceCollision(0.0f, 0.0f);
         glm::vec2 forceAlign;
         glm::vec2 forcePos;
+        glm::vec2 force;
+        glm::vec2 forceRand;
 
         float avgVX, avgVY;
         float avgX, avgY;
@@ -80,6 +84,7 @@ void State::Update(GLfloat dt) {
             glm::vec2 otherPos(other->GetX(), other->GetY());
             glm::vec2 dir = glm::normalize(myPos - otherPos);
             float dist = glm::distance(otherPos, myPos);
+            // dir is already normalized, so dont need to take norm
             if (dist < NEARBY_DIST) {
                 avgVX += other->GetVelocity().x; avgVY += other->GetVelocity().y;
                 avgX += other->GetX(); avgY += other->GetY();
@@ -98,51 +103,34 @@ void State::Update(GLfloat dt) {
             glm::vec2 avgVel(avgVX, avgVY);
             glm::vec2 avgPos(avgX, avgY);
             // Incorporate avg velocity
-            glm::vec2 dir = glm::normalize(avgVel - b->GetVelocity());
-            forceAlign = dir;
+            //forceAlign = glm::normalize(avgVel - b->GetVelocity());
+            forceAlign = avgVel - b->GetVelocity();
 
             // Incorporate average flock position
 
-            dir = glm::normalize(avgPos - myPos);
-            float dist = glm::distance(myPos, avgPos);
-            float scaling = (1.0f / (dist));
-            forcePos = dir * scaling;
+            //glm::vec2 pos_dir = glm::normalize(avgPos - myPos);
+            forcePos = avgPos - myPos;
+
+            forceCollision = b->SteerToward(forceCollision);
+            forceCollision *= COLLISION_WEIGHT;
+
+            forceAlign = b->SteerToward(forceAlign);
+            forceAlign *= ALIGN_WEIGHT;
+
+            forcePos = b->SteerToward(forcePos);
+            forcePos *= POSITION_WEIGHT;
+
+            force = forceCollision + forceAlign + forcePos;
         }
+        float theta = randDir(generator);
+        forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
+        forceRand *= RANDOM_WEIGHT;
+        force += forceRand;
 
-        // Average forces
-        glm::vec2 force = COLLISION_WEIGHT * forceCollision + ALIGN_WEIGHT * forceAlign + POSITION_WEIGHT * forcePos;
-        force = glm::vec2(SIGN(force.x) * std::min(std::abs(force.x), FORCE_CAP), SIGN(force.y) * std::min(std::abs(force.y), FORCE_CAP));
-
-        /*
-        // Find nearest neighbors
-        int xBox = (int) (b->GetX() / MAP_SQUARES_X);
-        int yBox = (int) (b->GetY() / MAP_SQUARES_Y);
-        for (int i = -1; i <= 1; i++) {
-            for (int j = -1; j <= 1; j++) {
-                if (xBox + i < 0 || xBox + i >= this->Width / MAP_SQUARES_X
-                    || yBox + j < 0 || yBox + j >= this->Height / MAP_SQUARES_Y) {
-                    continue;
-                }
-                for (std::pair<long,Boid*> other : boidMap[xBox + i][yBox + j]) {
-                    glm::vec2 otherPos(other.second->GetX(), other.second->GetY());
-                    glm::vec2 dir = otherPos - myPos;
-                    force += -dir;
-                }
-            }
-        }*/
         forces[b] = force;
     }
     for (Boid *b : this->boids) {
-        //int x = b->GetX();
-        //int y = b->GetY();
-        // Remove from old square
-        //assert(boidMap[(int)(x / MAP_SQUARES_X)][(int)(y / MAP_SQUARES_Y)].erase((long)b) != 0);
-
         b->Update(forces[b], dt);
-
-        // Add to new square
-        //x = b->GetX(); y = b->GetY();
-        //boidMap[(int)(x / MAP_SQUARES_X)][(int)(y / MAP_SQUARES_Y)][(long)b] = b;
     }
 }
 void State::Render() {

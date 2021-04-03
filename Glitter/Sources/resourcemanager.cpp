@@ -51,6 +51,7 @@ Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *
         // read file's buffer contents into streams
         vShaderStream << vertexShaderFile.rdbuf();
         fShaderStream << fragmentShaderFile.rdbuf();
+
         // close file handlers
         vertexShaderFile.close();
         fragmentShaderFile.close();
@@ -69,6 +70,7 @@ Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *
     }
     catch (std::exception e)
     {
+        std::cout << e.what() << "\n";
         std::cout << "ERROR::SHADER: Failed to read shader files" << std::endl;
     }
     const char *vShaderCode = vertexCode.c_str();

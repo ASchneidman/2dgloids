@@ -8,20 +8,33 @@
 
 static glm::vec2 yaxis = glm::vec2(0.0f, 1.0f);
 
+glm::vec2 clamp_magnitude(glm::vec2 vec, double max_value) {
+    if (glm::length(vec) > max_value) {
+        glm::vec2 v = glm::normalize(vec);
+        v *= max_value;
+        return v;
+    }
+    return vec;
+}
+
+glm::vec2 Boid::SteerToward(glm::vec2 force) {
+    return clamp_magnitude(glm::normalize(force) * MAX_VELOCITY - velocity, MAX_FORCE); 
+}
+
 void Boid::Draw(EntityRenderer *renderer) {
     renderer->Draw(this->position, this->rotation, this->color);
 }
 
 void Boid::Update(glm::vec2 force, float dt) {
     this->velocity += force * dt;
-    if (glm::length(this->velocity) > MAX_VELOCITY) {
-        this->velocity = glm::normalize(this->velocity) * MAX_VELOCITY;
-    }
+    this->velocity = clamp_magnitude(this->velocity, MAX_VELOCITY);
+    
     glm::vec2 change = this->velocity * dt;
     this->position += change;
     // Now calculate direction of movement
     glm::vec2 dir = glm::normalize(this->velocity);
     dir = glm::vec2(dir.x, -dir.y);
+    
     if (dir.x < 0.0f) {
         this->rotation = -acos(glm::dot(yaxis, dir));
     } else {
@@ -29,6 +42,7 @@ void Boid::Update(glm::vec2 force, float dt) {
     }
     this->position = glm::vec2(WRAP_VALUES(this->position.x, this->width),
                                 WRAP_VALUES(this->position.y, this->height));
+                                
 }
 
 float Boid::GetX() {
