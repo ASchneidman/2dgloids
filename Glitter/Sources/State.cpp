@@ -9,12 +9,12 @@
 #include <iterator>
 #include <iostream>
 
-#define NUM_BOIDS 100
+#define NUM_BOIDS 20
 #define BOID_SPEED 10.0f
 
 #define COLLISION_WEIGHT (1.0f)
-#define ALIGN_WEIGHT (1.5f)
-#define POSITION_WEIGHT (1.5f)
+#define ALIGN_WEIGHT (1.0f)
+#define POSITION_WEIGHT (1.0f)
 #define RANDOM_WEIGHT (0.0f)
 
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
@@ -27,7 +27,7 @@ std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
 
 
 EntityRenderer *Renderer;
-std::default_random_engine generator;
+std::default_random_engine generator(10);
 std::uniform_real_distribution<float> distribution(-100.0,100.0);
 
 static std::map<int, std::map<int, std::map<long, Boid *>>> boidMap;
@@ -47,6 +47,9 @@ void State::Init() {
 
     std::uniform_real_distribution<float> posDistX(0.0f, this->Width-1);
     std::uniform_real_distribution<float> posDistY(0.0f, this->Height-1);
+    //std::uniform_real_distribution<float> posDistX(this->Width/2-10, this->Width/2+10);
+    //std::uniform_real_distribution<float> posDistY(this->Height/2-10, this->Height/2+10);
+
 
     std::uniform_real_distribution<float> randSpeed(0.0f, BOID_SPEED);
 
@@ -56,7 +59,7 @@ void State::Init() {
         float theta = randDir(generator);
         glm::vec2 initVel = glm::vec2(glm::sin(theta), glm::cos(theta));
     
-        glm::vec2 initialVel = glm::normalize(initVel * randSpeed(generator));
+        glm::vec2 initialVel = initVel * randSpeed(generator);
         this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height));
     }
 }
@@ -64,15 +67,16 @@ void State::Init() {
 void State::Update(GLfloat dt) {
     std::map<Boid *, glm::vec2> forces;
     for (Boid *b : this->boids) {
-        glm::vec2 myPos(b->GetX(), b->GetY());
         glm::vec2 forceCollision(0.0f, 0.0f);
         glm::vec2 forceAlign;
         glm::vec2 forcePos;
         glm::vec2 force;
         glm::vec2 forceRand;
 
-        float avgVX, avgVY;
-        float avgX, avgY;
+        glm::vec2 flockCenter(0.0, 0.0);
+        glm::vec2 flockHeading(0.0, 0.0);
+        //float avgVX, avgVY;
+        //float avgX, avgY;
 
         int numClose = 0;
 
@@ -81,13 +85,14 @@ void State::Update(GLfloat dt) {
                 continue;
 
             // Collision avoidance
-            glm::vec2 otherPos(other->GetX(), other->GetY());
-            glm::vec2 dir = glm::normalize(myPos - otherPos);
-            float dist = glm::distance(otherPos, myPos);
+            glm::vec2 dir = glm::normalize(b->position - other->position);
+            float dist = glm::distance(other->position, b->position);
             // dir is already normalized, so dont need to take norm
             if (dist < NEARBY_DIST) {
-                avgVX += other->GetVelocity().x; avgVY += other->GetVelocity().y;
-                avgX += other->GetX(); avgY += other->GetY();
+                //avgVX += other->GetVelocity().x; avgVY += other->GetVelocity().y;
+                flockCenter += other->position;
+                flockHeading += glm::normalize(other->velocity);
+                //avgX += other->GetX(); avgY += other->GetY();
                 numClose += 1;
                 float scaling = (1.0f / (dist * dist));
                 forceCollision += dir * scaling;
@@ -95,21 +100,10 @@ void State::Update(GLfloat dt) {
         }
 
         if (numClose > 0) {
-            avgVX /= numClose;
-            avgVY /= numClose;
-            avgX /= numClose;
-            avgY /= numClose;
+            forceAlign = flockHeading;
 
-            glm::vec2 avgVel(avgVX, avgVY);
-            glm::vec2 avgPos(avgX, avgY);
-            // Incorporate avg velocity
-            //forceAlign = glm::normalize(avgVel - b->GetVelocity());
-            forceAlign = avgVel - b->GetVelocity();
-
-            // Incorporate average flock position
-
-            //glm::vec2 pos_dir = glm::normalize(avgPos - myPos);
-            forcePos = avgPos - myPos;
+            flockCenter /= numClose;
+            forcePos = (flockCenter - b->position);
 
             forceCollision = b->SteerToward(forceCollision);
             forceCollision *= COLLISION_WEIGHT;

@@ -9,19 +9,11 @@
 #include <glm/vec2.hpp>
 #include "EntityRenderer.h"
 
-#define MAX_VELOCITY 500.0f
-#define MAX_FORCE 500.0f
+#define MAX_VELOCITY 700.0f
+#define MAX_FORCE 600.0f
 
 class Boid {
 private:
-    // Each iteration, a random force is chosen. This is
-    // added to the velocity, which is then added to position
-    // (scaled by dt)
-    glm::vec2 position, velocity;
-    // Inferred from movement, about z-axis
-    float rotation;
-    float width, height;
-    glm::vec3 color;
 public:
     Boid(glm::vec2 &initialPos, glm::vec2 &initialVel,
             float width, float height): width(width), height(height) {
@@ -36,6 +28,14 @@ public:
     float GetX(); float GetY();
     glm::vec2 SteerToward(glm::vec2 force);
     glm::vec2 GetVelocity();
+    // Each iteration, a random force is chosen. This is
+    // added to the velocity, which is then added to position
+    // (scaled by dt)
+    glm::vec2 position, velocity;
+    // Inferred from movement, about z-axis
+    float rotation;
+    float width, height;
+    glm::vec3 color;
 };
 
 
