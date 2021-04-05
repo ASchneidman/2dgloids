@@ -10,7 +10,7 @@
 #include <iostream>
 #include <omp.h>
 
-#define NUM_BOIDS 1000
+#define NUM_BOIDS 100
 #define BOID_SPEED 10.0f
 
 #define COLLISION_WEIGHT (1.3f)
