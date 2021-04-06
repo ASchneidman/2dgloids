@@ -12,9 +12,9 @@
 #include <iostream>
 
 // The Width of the screen
-const int SCREEN_WIDTH = 1000;
+const unsigned int SCREEN_WIDTH = 6000;
 // The height of the screen
-const int SCREEN_HEIGHT = 800;
+const unsigned int SCREEN_HEIGHT = 3000;
 
 State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -48,10 +48,10 @@ int main(int argc, char * argv[]) {
     float lastFrame = 0.0f;
 
     float averageFrameTime = 0.0f;
-
+    float startTime = glfwGetTime();
     // Rendering Loop
     int i = 0;
-    while (glfwWindowShouldClose(mWindow) == false) {
+    while (glfwWindowShouldClose(mWindow) == false && i < 30) {
         // calculate delta time
         // --------------------
         float currentFrame = glfwGetTime();
@@ -68,13 +68,18 @@ int main(int argc, char * argv[]) {
 
         float c = glfwGetTime();
         state.Update(deltaTime);
-        //printf("Frame time: %.3f\n", glfwGetTime() - c);
+        printf("Time to run frame %d: %.3f\n", i, glfwGetTime() - c);
         state.Render();
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
         i += 1;
-    }   glfwTerminate();
+    }   
+    printf("Total time: %.3f\n", i, glfwGetTime() - startTime);
+    printf("Average frame time: %.3f\n", averageFrameTime / 30);
+
+    glfwTerminate();
+
     return EXIT_SUCCESS;
 }
