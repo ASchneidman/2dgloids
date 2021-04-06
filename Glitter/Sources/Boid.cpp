@@ -3,10 +3,18 @@
 //
 
 #include "Boid.h"
+#include <math.h>
 
-#define WRAP_VALUES(val, bound) (((val) >= (bound)) ? 0.0f : ((val) < 0.0f ? (bound - 1.0f) : val))
 
 static glm::vec2 yaxis = glm::vec2(0.0f, 1.0f);
+
+float wrap_value(float value, float bound) {
+    float m = std::fmod(value, bound);
+    if (m < 0) {
+        m += bound;
+    }
+    return m;
+}
 
 glm::vec2 clamp_magnitude(glm::vec2 vec, double max_value) {
     if (glm::length(vec) > max_value) {
@@ -40,9 +48,8 @@ void Boid::Update(glm::vec2 force, float dt) {
     } else {
         this->rotation = acos(glm::dot(yaxis, dir));
     }
-    this->position = glm::vec2(WRAP_VALUES(this->position.x, this->width),
-                                WRAP_VALUES(this->position.y, this->height));
-                                
+    this->position = glm::vec2(wrap_value(this->position.x, this->width),
+                                wrap_value(this->position.y, this->height));
 }
 
 float Boid::GetX() {

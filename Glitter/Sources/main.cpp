@@ -12,9 +12,9 @@
 #include <iostream>
 
 // The Width of the screen
-const unsigned int SCREEN_WIDTH = 2000;
+const int SCREEN_WIDTH = 1000;
 // The height of the screen
-const unsigned int SCREEN_HEIGHT = 2000;
+const int SCREEN_HEIGHT = 800;
 
 State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -68,7 +68,7 @@ int main(int argc, char * argv[]) {
 
         float c = glfwGetTime();
         state.Update(deltaTime);
-        printf("Frame time: %.3f\n", glfwGetTime() - c);
+        //printf("Frame time: %.3f\n", glfwGetTime() - c);
         state.Render();
 
         // Flip Buffers and Draw
