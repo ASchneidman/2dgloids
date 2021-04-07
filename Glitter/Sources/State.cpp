@@ -10,18 +10,8 @@
 #include <iostream>
 #include <omp.h>
 
-#define NUM_BOIDS 100000
-#define BOID_SPEED 10.0f
-
-#define COLLISION_WEIGHT (1.3f)
-#define ALIGN_WEIGHT (1.5f)
-#define POSITION_WEIGHT (1.5f)
-
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
 
-#define NEARBY_DIST 250.0f
-
-#define LINE_OF_SIGHT (3.0 * glm::pi<float>() / 4.0)
 
 std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
 
@@ -119,9 +109,7 @@ void State::Update(GLfloat dt) {
     }
 }
 void State::Render() {
-    for (Boid *b : this->boids) {
-        b->Draw(Renderer);
-    }
+    Renderer->DrawBoids(boids);
 }
 
 State::~State() {

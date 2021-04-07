@@ -7,7 +7,8 @@
 
 
 #include <glm/vec2.hpp>
-#include "EntityRenderer.h"
+#include <glm/glm.hpp>
+//#include "EntityRenderer.h"
 
 #define MAX_VELOCITY 700.0f
 #define MAX_FORCE 600.0f
@@ -23,7 +24,6 @@ public:
         this->color = glm::vec3((rand() % 10) / 9.0f, (rand() % 10) / 9.0f, (rand() % 10) / 9.0f);
     }
     ~Boid() = default;
-    void Draw(EntityRenderer *renderer);
     void Update(glm::vec2 force, float dt);
     float GetX(); float GetY();
     glm::vec2 SteerToward(glm::vec2 force);

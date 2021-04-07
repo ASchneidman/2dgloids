@@ -29,10 +29,6 @@ glm::vec2 Boid::SteerToward(glm::vec2 force) {
     return clamp_magnitude(glm::normalize(force) * MAX_VELOCITY - velocity, MAX_FORCE); 
 }
 
-void Boid::Draw(EntityRenderer *renderer) {
-    renderer->Draw(this->position, this->rotation, this->color);
-}
-
 void Boid::Update(glm::vec2 force, float dt) {
     this->velocity += force * dt;
     this->velocity = clamp_magnitude(this->velocity, MAX_VELOCITY);

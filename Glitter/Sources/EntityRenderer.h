@@ -7,6 +7,9 @@
 
 
 #include "shader.h"
+#include "Boid.h"
+#include "glitter.hpp"
+#include <vector>
 
 #define ER_DEFAULT_SIZE 10.0f
 #define ER_DEFAULT_ROT 0.0f
@@ -25,9 +28,14 @@ public:
     void Draw(glm::vec2 &pos,
                 float rotate,
                 glm::vec3 color);
+    void DrawBoids(std::vector<Boid *> &boids);
 private:
     Shader shader;
     GLuint VAO;
+    glm::mat4 *model_matrices;
+    glm::vec3 *color_matrices;
+    GLuint model_buffer;
+    GLuint color_buffer;
     void initRenderData();
 };
 

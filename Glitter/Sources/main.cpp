@@ -51,7 +51,7 @@ int main(int argc, char * argv[]) {
     float startTime = glfwGetTime();
     // Rendering Loop
     int i = 0;
-    while (glfwWindowShouldClose(mWindow) == false && i < 30) {
+    while (glfwWindowShouldClose(mWindow) == false) {
         // calculate delta time
         // --------------------
         float currentFrame = glfwGetTime();
@@ -66,18 +66,21 @@ int main(int argc, char * argv[]) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        float c = glfwGetTime();
+        float update_start = glfwGetTime();
         state.Update(deltaTime);
-        printf("Time to run frame %d: %.3f\n", i, glfwGetTime() - c);
+        float update_end = glfwGetTime();
+        float render_start = glfwGetTime();
         state.Render();
+        float render_end = glfwGetTime();
+
+        printf("Update time: %.3f\n", update_end - update_start);
+        printf("Render time: %.3f\n\n", render_end - render_start);
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
         i += 1;
     }   
-    printf("Total time: %.3f\n", i, glfwGetTime() - startTime);
-    printf("Average frame time: %.3f\n", averageFrameTime / 30);
 
     glfwTerminate();
 
