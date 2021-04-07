@@ -11,9 +11,6 @@
 #include "glitter.hpp"
 #include <vector>
 
-#define ER_DEFAULT_SIZE 10.0f
-#define ER_DEFAULT_ROT 0.0f
-
 class EntityRenderer {
 public:
     EntityRenderer(Shader &shader);
