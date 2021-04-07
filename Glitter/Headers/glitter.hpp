@@ -18,7 +18,7 @@
 #define MAX_VELOCITY 700.0f
 #define MAX_FORCE 600.0f
 
-#define NUM_BOIDS 100000
+#define NUM_BOIDS 200
 #define BOID_SPEED 10.0f
 
 #define COLLISION_WEIGHT (1.3f)
@@ -26,5 +26,10 @@
 #define POSITION_WEIGHT (1.5f)
 
 #define NEARBY_DIST 250.0f
+
+// The Width of the screen
+const unsigned int SCREEN_WIDTH = 1000;
+// The height of the screen
+const unsigned int SCREEN_HEIGHT = 800;
 
 #endif //~ Glitter Header

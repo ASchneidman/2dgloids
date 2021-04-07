@@ -11,10 +11,6 @@
 #include <cstdlib>
 #include <iostream>
 
-// The Width of the screen
-const unsigned int SCREEN_WIDTH = 6000;
-// The height of the screen
-const unsigned int SCREEN_HEIGHT = 3000;
 
 State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
