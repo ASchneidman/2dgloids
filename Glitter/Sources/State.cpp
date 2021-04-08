@@ -9,6 +9,7 @@
 #include <iterator>
 #include <iostream>
 #include <omp.h>
+#include <glm/gtx/color_space.hpp>
 
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
 
@@ -110,7 +111,14 @@ void State::Update(GLfloat dt) {
             forcePos *= position_weight;
 
             force = forceCollision + forceAlign + forcePos;
+
         }
+        glm::vec3 bhsv = glm::hsvColor(b->color);
+        glm::vec3 otherhsv = glm::hsvColor(mincolor);
+        glm::vec3 color = glm::vec3(.4f * bhsv.x + .6f * otherhsv.x, bhsv.y, bhsv.z);
+        colors[b] = glm::rgbColor(color);
+        //colors[b] = .4f * b->color + (.6f) * mincolor;
+        b->color = colors[b];
 
 
         float theta = randDir(generator);
@@ -118,10 +126,10 @@ void State::Update(GLfloat dt) {
         force += forceRand;
 
         forces[b] = force;
-        b->color = mincolor;
     }
     for (Boid *b : this->boids) {
         b->Update(forces[b], dt);
+        //b->color = colors[b];
     }
 }
 void State::Render() {
