@@ -54,55 +54,71 @@ void State::Init() {
 
 void State::Update(GLfloat dt) {
     std::map<Boid *, glm::vec2> forces;
-    for (Boid *b : this->boids) {
+    std::map<Boid *, glm::vec3> colors;
+    for (size_t j = 0; j < this->boids.size(); j++) {
+        Boid *b = boids[j];
+
         glm::vec2 forceCollision(0.0f, 0.0f);
-        glm::vec2 forceAlign;
-        glm::vec2 forcePos;
-        glm::vec2 force;
-        glm::vec2 forceRand;
+        glm::vec2 forceAlign(0.0f);
+        glm::vec2 forcePos(0.0f);
+        glm::vec2 force(0.0f);
+        glm::vec2 forceRand(0.0f);
 
         glm::vec2 flockCenter(0.0, 0.0);
         glm::vec2 flockHeading(0.0, 0.0);
 
         int numClose = 0;
 
-        for (int i = 0; i < this->boids.size(); i++) {
+        glm::vec3 mincolor = b->natural_color;
+
+        for (size_t i = 0; i < this->boids.size(); i++) {
             Boid *other = this->boids[i];
             if (b == other)
                 continue;
 
             // Collision avoidance
-            glm::vec2 dir = glm::normalize(b->position - other->position);
             float dist = glm::distance(other->position, b->position);
             // dir is already normalized, so dont need to take norm
-            if (dist < NEARBY_DIST) {
+            if (dist < nearby_dist) {
+                if (i < j) {
+                    mincolor = other->color;
+                }
+
                 flockCenter += other->position;
-                flockHeading += glm::normalize(other->velocity);
+                flockHeading += other->velocity;
                 numClose += 1;
                 float scaling = (1.0f / (dist * dist));
+                glm::vec2 dir = glm::normalize(b->position - other->position);
                 forceCollision += dir * scaling;
             }
         }
 
         if (numClose > 0) {
             forceAlign = flockHeading;
+            forceAlign /= numClose;
 
             flockCenter /= numClose;
             forcePos = (flockCenter - b->position);
 
             forceCollision = b->SteerToward(forceCollision);
-            forceCollision *= COLLISION_WEIGHT;
+            forceCollision *= collision_weight;
 
             forceAlign = b->SteerToward(forceAlign);
-            forceAlign *= ALIGN_WEIGHT;
+            forceAlign *= align_weight;
 
             forcePos = b->SteerToward(forcePos);
-            forcePos *= POSITION_WEIGHT;
+            forcePos *= position_weight;
 
             force = forceCollision + forceAlign + forcePos;
         }
 
+
+        float theta = randDir(generator);
+        forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
+        force += forceRand;
+
         forces[b] = force;
+        b->color = mincolor;
     }
     for (Boid *b : this->boids) {
         b->Update(forces[b], dt);

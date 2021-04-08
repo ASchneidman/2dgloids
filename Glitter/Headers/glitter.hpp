@@ -1,7 +1,7 @@
 // Preprocessor Directives
 #ifndef GLITTER
 #define GLITTER
-#pragma once
+//#pragma once
 
 // System Headers
 #include <glad/glad.h>
@@ -15,24 +15,32 @@
 
 
 // Boid related constants
-#define MAX_VELOCITY 700.0f
-#define MAX_FORCE 600.0f
 
-#define NUM_BOIDS 100000
-#define BOID_SPEED 10.0f
+#define NUM_BOIDS 1500
+#define BOID_SPEED 100.0f
 
-#define COLLISION_WEIGHT (1.3f)
-#define ALIGN_WEIGHT (1.5f)
-#define POSITION_WEIGHT (1.5f)
+#define MAX_VEL 1800.0f
+#define MAX_FORCE 1000000.0f
 
-#define NEARBY_DIST 250.0f
+#define COLLISION_WEIGHT (1.f)
+#define ALIGN_WEIGHT (1.f)
+#define POSITION_WEIGHT (1.f)
+
+#define NEARBY_DIST 70.0f
 
 #define ER_DEFAULT_SIZE 5.0f
 #define ER_DEFAULT_ROT 0.0f
 
 // The Width of the screen
-const unsigned int SCREEN_WIDTH = 6000;
+const unsigned int SCREEN_WIDTH = 1700;
 // The height of the screen
-const unsigned int SCREEN_HEIGHT = 2000;
+const unsigned int SCREEN_HEIGHT = 900;
+
+extern float max_velocity;
+extern float nearby_dist;
+
+extern float collision_weight;
+extern float align_weight;
+extern float position_weight;
 
 #endif //~ Glitter Header

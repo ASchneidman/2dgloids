@@ -11,10 +11,19 @@
 #include <cstdlib>
 #include <iostream>
 
+float max_velocity = MAX_VEL;
+float nearby_dist = NEARBY_DIST;
+
+float collision_weight = COLLISION_WEIGHT;
+float align_weight = ALIGN_WEIGHT;
+float position_weight = POSITION_WEIGHT;
 
 State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
 int main(int argc, char * argv[]) {
+    (void)argc; (void)argv;
 
     // Load GLFW and Create a Window
     glfwInit();
@@ -35,6 +44,8 @@ int main(int argc, char * argv[]) {
     glfwMakeContextCurrent(mWindow);
     gladLoadGL();
     fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
+
+    glfwSetKeyCallback(mWindow, key_callback);
 
     state.Init();
 
@@ -69,16 +80,66 @@ int main(int argc, char * argv[]) {
         state.Render();
         float render_end = glfwGetTime();
 
-        printf("Update time: %.3f\n", update_end - update_start);
-        printf("Render time: %.3f\n\n", render_end - render_start);
+        printf("\rUpdate time: %.3f, Render time: %.3f, Max Velocity: %.3f, View Distance: %.3f, Collision Weight: %.3f, Align Weight: %.3f, Position Weight: %.3f", 
+        update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
+        collision_weight, align_weight, position_weight);
+
+        //printf("Update time: %.3f\n", update_end - update_start);
+        //printf("Render time: %.3f\n\n", render_end - render_start);
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
         i += 1;
     }   
-
+    std::cout << std::endl;
     glfwTerminate();
 
     return EXIT_SUCCESS;
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    (void)scancode; (void)action; (void)mods; (void)window;
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        switch (key)
+        {
+        case GLFW_KEY_W:
+            max_velocity += 100.0f;
+            break;
+        case GLFW_KEY_S:
+            max_velocity -= 100.0f;
+            break;
+        case GLFW_KEY_UP:
+            nearby_dist += 10.0f;
+            break;
+        case GLFW_KEY_DOWN:
+            nearby_dist -= 10.0f;
+            break;
+        case GLFW_KEY_1:
+            collision_weight += .1f;
+            break;
+        case GLFW_KEY_2:
+            collision_weight -= .1f;
+            break;
+        case GLFW_KEY_3:
+            align_weight += .1f;
+            break;
+        case GLFW_KEY_4:
+            align_weight -= .1f;
+            break;
+        case GLFW_KEY_5:
+            position_weight += .1f;
+            break;
+        case GLFW_KEY_6:
+            position_weight -= .1f;
+            break;
+        default:
+            break;
+        }
+    }
+    max_velocity = std::max(max_velocity, 1.0f);
+    nearby_dist = std::max(nearby_dist, 1.0f);
+    collision_weight = std::max(collision_weight, 0.0f);
+    align_weight = std::max(align_weight, 0.0f);
+    position_weight = std::max(position_weight, 0.0f);
 }

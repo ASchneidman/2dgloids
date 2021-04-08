@@ -61,7 +61,6 @@ void EntityRenderer::initRenderData() {
     glBindBuffer(GL_ARRAY_BUFFER, color_buffer);
     glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(glm::vec3), &color_matrices[0], GL_STATIC_DRAW);
 
-    std::size_t vec3Size = sizeof(glm::vec3);
     glEnableVertexAttribArray(6); 
     glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 

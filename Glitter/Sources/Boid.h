@@ -8,10 +8,10 @@
 
 #include <glm/vec2.hpp>
 #include <glm/glm.hpp>
+#include "glitter.hpp"
 //#include "EntityRenderer.h"
 
-#define MAX_VELOCITY 700.0f
-#define MAX_FORCE 600.0f
+
 
 class Boid {
 private:
@@ -22,6 +22,7 @@ public:
         velocity = initialVel;
         this->rotation = M_PI;
         this->color = glm::vec3((rand() % 10) / 9.0f, (rand() % 10) / 9.0f, (rand() % 10) / 9.0f);
+        this->natural_color = color;
     }
     ~Boid() = default;
     void Update(glm::vec2 force, float dt);
@@ -36,6 +37,7 @@ public:
     float rotation;
     float width, height;
     glm::vec3 color;
+    glm::vec3 natural_color;
 };
 
 

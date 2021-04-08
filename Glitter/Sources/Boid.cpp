@@ -16,7 +16,7 @@ float wrap_value(float value, float bound) {
     return m;
 }
 
-glm::vec2 clamp_magnitude(glm::vec2 vec, double max_value) {
+glm::vec2 clamp_magnitude(glm::vec2 vec, float max_value) {
     if (glm::length(vec) > max_value) {
         glm::vec2 v = glm::normalize(vec);
         v *= max_value;
@@ -26,15 +26,22 @@ glm::vec2 clamp_magnitude(glm::vec2 vec, double max_value) {
 }
 
 glm::vec2 Boid::SteerToward(glm::vec2 force) {
-    return clamp_magnitude(glm::normalize(force) * MAX_VELOCITY - velocity, MAX_FORCE); 
+    return clamp_magnitude(glm::normalize(force) * max_velocity - velocity, MAX_FORCE); 
 }
 
 void Boid::Update(glm::vec2 force, float dt) {
     this->velocity += force * dt;
-    this->velocity = clamp_magnitude(this->velocity, MAX_VELOCITY);
+    this->velocity = clamp_magnitude(this->velocity, max_velocity);
     
     glm::vec2 change = this->velocity * dt;
+
+    if (change.x + position.x < 0 || change.x + position.x >= this->width || change.y + position.y < 0 || change.y + position.y >= this->height) {
+        velocity *= -1;
+        change = velocity * dt;
+    }
+
     this->position += change;
+
     // Now calculate direction of movement
     glm::vec2 dir = glm::normalize(this->velocity);
     dir = glm::vec2(dir.x, -dir.y);
