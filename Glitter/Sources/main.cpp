@@ -84,8 +84,6 @@ int main(int argc, char * argv[]) {
         update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
         collision_weight, align_weight, position_weight);
 
-        //printf("Update time: %.3f\n", update_end - update_start);
-        //printf("Render time: %.3f\n\n", render_end - render_start);
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);

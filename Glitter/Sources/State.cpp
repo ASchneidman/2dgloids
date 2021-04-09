@@ -4,6 +4,7 @@
 
 #include "State.h"
 #include "resourcemanager.h"
+#include "QuadTree.hpp"
 #include <random>
 #include <map>
 #include <iterator>
@@ -49,16 +50,20 @@ void State::Init() {
         glm::vec2 initVel = glm::vec2(glm::sin(theta), glm::cos(theta));
     
         glm::vec2 initialVel = initVel * randSpeed(generator);
-        this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height));
+        this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height, i));
     }
 }
+
 
 void State::Update(GLfloat dt) {
     std::map<Boid *, glm::vec2> forces;
     std::map<Boid *, glm::vec3> colors;
-    for (size_t j = 0; j < this->boids.size(); j++) {
-        Boid *b = boids[j];
 
+    QuadTree qt(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height));
+    for (Boid *b : boids) {
+        qt.insert(b);
+    }
+    for (Boid *b : boids) {
         glm::vec2 forceCollision(0.0f, 0.0f);
         glm::vec2 forceAlign(0.0f);
         glm::vec2 forcePos(0.0f);
@@ -67,21 +72,18 @@ void State::Update(GLfloat dt) {
 
         glm::vec2 flockCenter(0.0, 0.0);
         glm::vec2 flockHeading(0.0, 0.0);
-
         int numClose = 0;
-
         glm::vec3 mincolor = b->natural_color;
 
-        for (size_t i = 0; i < this->boids.size(); i++) {
-            Boid *other = this->boids[i];
-            if (b == other)
-                continue;
-
+        std::function<void(Boid*)> lambda = [&](Boid *other) {
+            if (other->index == b->index) {
+                return;
+            }
             // Collision avoidance
             float dist = glm::distance(other->position, b->position);
             // dir is already normalized, so dont need to take norm
             if (dist < nearby_dist) {
-                if (i < j) {
+                if (other->index < b->index) {
                     mincolor = other->color;
                 }
 
@@ -92,7 +94,9 @@ void State::Update(GLfloat dt) {
                 glm::vec2 dir = glm::normalize(b->position - other->position);
                 forceCollision += dir * scaling;
             }
-        }
+        };
+
+        qt.query(b, lambda);
 
         if (numClose > 0) {
             forceAlign = flockHeading;
@@ -113,11 +117,7 @@ void State::Update(GLfloat dt) {
             force = forceCollision + forceAlign + forcePos;
 
         }
-        glm::vec3 bhsv = glm::hsvColor(b->color);
-        glm::vec3 otherhsv = glm::hsvColor(mincolor);
-        glm::vec3 color = glm::vec3(.4f * bhsv.x + .6f * otherhsv.x, bhsv.y, bhsv.z);
-        colors[b] = glm::rgbColor(color);
-        //colors[b] = .4f * b->color + (.6f) * mincolor;
+        colors[b] = .4f * b->color + (.6f) * mincolor;
         b->color = colors[b];
 
 
@@ -127,9 +127,9 @@ void State::Update(GLfloat dt) {
 
         forces[b] = force;
     }
+
     for (Boid *b : this->boids) {
         b->Update(forces[b], dt);
-        //b->color = colors[b];
     }
 }
 void State::Render() {
