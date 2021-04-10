@@ -52,18 +52,29 @@ void State::Init() {
         glm::vec2 initialVel = initVel * randSpeed(generator);
         this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height, i));
     }
+
+    qt = new QuadTreeHead(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height));
 }
 
 
 void State::Update(GLfloat dt) {
-    std::map<Boid *, glm::vec2> forces;
-    std::map<Boid *, glm::vec3> colors;
+    glm::vec2 forces[NUM_BOIDS];
 
-    QuadTree qt(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height));
-    for (Boid *b : boids) {
-        qt.insert(b);
+    /*
+    if (qt != NULL) {
+        delete qt;
     }
+    qt = new QuadTreeHead(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height));
+    */
+
+
     for (Boid *b : boids) {
+        qt->insert(b);
+    }
+
+    #pragma omp parallel for
+    for (size_t i = 0; i < boids.size(); i++) {
+        Boid *b = boids[i];
         glm::vec2 forceCollision(0.0f, 0.0f);
         glm::vec2 forceAlign(0.0f);
         glm::vec2 forcePos(0.0f);
@@ -96,8 +107,8 @@ void State::Update(GLfloat dt) {
             }
         };
 
-        qt.query(b, lambda);
-
+        qt->query(b, lambda);
+    
         if (numClose > 0) {
             forceAlign = flockHeading;
             forceAlign /= numClose;
@@ -117,23 +128,28 @@ void State::Update(GLfloat dt) {
             force = forceCollision + forceAlign + forcePos;
 
         }
-        colors[b] = .4f * b->color + (.6f) * mincolor;
-        b->color = colors[b];
+        b->color = .4f * b->color + (.6f) * mincolor;
 
 
         float theta = randDir(generator);
         forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
         force += forceRand;
 
-        forces[b] = force;
+        forces[b->index] = force;
     }
+    
 
     for (Boid *b : this->boids) {
-        b->Update(forces[b], dt);
+        b->Update(forces[b->index], dt);
     }
+
 }
 void State::Render() {
     Renderer->DrawBoids(boids);
+    if (qt && VISUALIZE) {
+        qt->visualize();
+    }
+    qt->clear();
 }
 
 State::~State() {

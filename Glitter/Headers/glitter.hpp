@@ -16,7 +16,7 @@
 
 // Boid related constants
 
-#define NUM_BOIDS 1500
+#define NUM_BOIDS 100000
 #define BOID_SPEED 100.0f
 
 #define MAX_VEL 1800.0f
@@ -31,10 +31,14 @@
 #define ER_DEFAULT_SIZE 5.0f
 #define ER_DEFAULT_ROT 0.0f
 
+#define VISUALIZE (true)
+
+#define NODE_CAPACITY 100
+
 // The Width of the screen
-const unsigned int SCREEN_WIDTH = 1700;
+const unsigned int SCREEN_WIDTH = 6000;
 // The height of the screen
-const unsigned int SCREEN_HEIGHT = 800;
+const unsigned int SCREEN_HEIGHT = 2000;
 
 extern float max_velocity;
 extern float nearby_dist;

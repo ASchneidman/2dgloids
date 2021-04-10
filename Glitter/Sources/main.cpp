@@ -83,7 +83,7 @@ int main(int argc, char * argv[]) {
         printf("\rUpdate time: %.3f, Render time: %.3f, Max Velocity: %.3f, View Distance: %.3f, Collision Weight: %.3f, Align Weight: %.3f, Position Weight: %.3f", 
         update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
         collision_weight, align_weight, position_weight);
-
+        
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
