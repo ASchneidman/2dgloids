@@ -17,6 +17,7 @@ float nearby_dist = NEARBY_DIST;
 float collision_weight = COLLISION_WEIGHT;
 float align_weight = ALIGN_WEIGHT;
 float position_weight = POSITION_WEIGHT;
+float gravity_weight = GRAVITY_WEIGHT;
 
 State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -131,6 +132,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         case GLFW_KEY_6:
             position_weight -= .1f;
             break;
+        case GLFW_KEY_7:
+            gravity_weight += .1f;
+            break;
+        case GLFW_KEY_8:
+            gravity_weight -= .1f;
+            break;
         default:
             break;
         }
@@ -140,4 +147,5 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     collision_weight = std::max(collision_weight, 0.0f);
     align_weight = std::max(align_weight, 0.0f);
     position_weight = std::max(position_weight, 0.0f);
+    gravity_weight = std::max(gravity_weight, 0.0f);
 }

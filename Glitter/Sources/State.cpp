@@ -67,7 +67,7 @@ void State::Update(GLfloat dt) {
     qt = new QuadTreeHead(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height));
     */
 
-
+    qt->clear();
     for (Boid *b : boids) {
         qt->insert(b);
     }
@@ -135,7 +135,11 @@ void State::Update(GLfloat dt) {
         forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
         force += forceRand;
 
+        glm::vec2 forceGravity(0.0f, 1000.0f);
+        force += forceGravity * gravity_weight;
+
         forces[b->index] = force;
+        b->num_flockmates = numClose;
     }
     
 
@@ -149,7 +153,7 @@ void State::Render() {
     if (qt && VISUALIZE) {
         qt->visualize();
     }
-    qt->clear();
+    //qt->clear();
 }
 
 State::~State() {

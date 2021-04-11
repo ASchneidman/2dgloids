@@ -39,6 +39,7 @@ public:
     glm::vec3 color;
     glm::vec3 natural_color;
     int index;
+    int num_flockmates = 0;
 };
 
 
