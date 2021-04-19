@@ -1,59 +1,21 @@
 #include "GridBin.hpp"
 #include <iostream>
 
-const static char *lineVertShader = R"(#version 330
-layout (location = 0) in vec3 aPos;
 
-void main() {
-    gl_Position = vec4(aPos, 1.0f);
-})";
-
-const static char *lineFragShader = R"(#version 330
-out vec4 out_color;
-
-void main() {
-    out_color = vec4(1.0, 1.0, 1.0, 1.0);
+// Grid class
+Grid::Grid(glm::vec2 bounds_x, glm::vec2 bounds_y): bounds_x(bounds_x),
+    bounds_y(bounds_y),
+    num_boids(0) {
 }
 
-)";
+Grid::~Grid() {
 
-void checkCompileErrors(unsigned int object, std::string type)
-{
-    int success;
-    char infoLog[1024];
-    if (type != "PROGRAM")
-    {
-        glGetShaderiv(object, GL_COMPILE_STATUS, &success);
-        if (!success)
-        {
-            glGetShaderInfoLog(object, 1024, NULL, infoLog);
-            std::cout << "| ERROR::SHADER: Compile-time error: Type: " << type << "\n"
-                      << infoLog << "\n -- --------------------------------------------------- -- "
-                      << std::endl;
-        }
-    }
-    else
-    {
-        glGetProgramiv(object, GL_LINK_STATUS, &success);
-        if (!success)
-        {
-            glGetProgramInfoLog(object, 1024, NULL, infoLog);
-            std::cout << "| ERROR::Shader: Link-time error: Type: " << type << "\n"
-                      << infoLog << "\n -- --------------------------------------------------- -- "
-                      << std::endl;
-        }
-    }
 }
 
-GridBin::~GridBin() {
-    if (VISUALIZE) {
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
-    }
-}
+int num_boids;
+Boid *boids[NODE_CAPACITY];
 
-
-bool GridBin::insert(Boid *b) {
+bool Grid::insert(Boid *b) {
     if (b->position.x < bounds_x.x || b->position.x >= bounds_x.y || 
         b->position.y < bounds_y.x || b->position.y >= bounds_y.y) {
             return false;
@@ -81,58 +43,92 @@ bool circleInRect(glm::vec2 &circle_pos, glm::vec2 &bounds_x, glm::vec2 &bounds_
     float distX = closestX - circle_pos.x;
     float distY = closestY - circle_pos.y;
 
-    if ( ((distX*distX) + (distY*distY)) <= (nearby_dist*nearby_dist) ) {
+    if ( ((distX * distX) + (distY * distY)) <= (nearby_dist * nearby_dist) ) {
         return true;
     } else {
         return false;
     }
 }
 
-void GridBin::query(Boid *b, std::function<void(Boid *)> &iterate_function) {
+void Grid::query(Boid *b, std::function<void(Boid *)> &iterate_function) {
     // Check if sphere of influence intersects this bbox
     if (!circleInRect(b->position, bounds_x, bounds_y)) {
         return;
     }
-
     for (int i = 0; i < num_boids; i++) {
         iterate_function(boids[i]);
     }
     return;
 }
 
-void GridBin::clear() {
+void Grid::clear() {
     num_boids = 0;
 }
 
-void GridBin::visualize() {
-    assert(VISUALIZE);
-    // Assumes a vao is bound, shader in use, MVP matrix bound
+// void Grid::visualize();
 
-    
-    float vertices[] = {
-        bounds_x.x, bounds_y.x, 0.0f, // bottom left corner
-        bounds_x.y, bounds_y.x, 0.0f, // bottom right corner
-        bounds_x.y, bounds_y.y, 0.0f, // top right corner
-        bounds_x.x, bounds_y.y, 0.0f, // top left corner
-    };
 
-    for (int i = 0; i < 12; i+=3) {
-        vertices[i] = ((vertices[i] / SCREEN_WIDTH) - 0.5f) * 2;
-        vertices[i+1] = (((SCREEN_HEIGHT - vertices[i+1]) / SCREEN_HEIGHT) - 0.5f) * 2;
 
+// GridBin class
+GridBin::GridBin() {
+    // make grid 
+    // Grid *grids[gridDim_M][gridDim_N];
+    float grid_x = SCREEN_WIDTH / gridDim_M;
+    float grid_y = SCREEN_HEIGHT / gridDim_N;
+    for (int i = 0; i < gridDim_M; i++) {
+        for (int j = 0; j < gridDim_N; j++) {
+            // set bounds of each grid
+            glm::vec2 bounds_x(grid_x * i, grid_x * (i + 1));
+            glm::vec2 bounds_y(grid_y * j, grid_y * (j + 1));
+            grids[i][j] = new Grid(bounds_x, bounds_y);
+        }
     }
 
-    glBindVertexArray(VAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+}
+GridBin::~GridBin() {
+    for (int i = 0; i < gridDim_M; i++) {
+        for (int j = 0; j < gridDim_N; j++) {
+            // delete each grid
+            delete grids[i][j];
+        }
+    }
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+}
 
-    glDrawArrays(GL_LINE_LOOP, 0, 4);
+Grid GridBin::which_grid(Boid *b) {
+    // search function can be more efficient 
+    float grid_x = SCREEN_WIDTH / gridDim_M;
+    float grid_y = SCREEN_HEIGHT / gridDim_N;
+    for (int i = 0; i < gridDim_M; i++) {
+        for (int j = 0; j < gridDim_N; j++) {
+            if (b->position.x >= grids[i][j]->bounds_x.x && b->position.x < grids[i][j]->bounds_x.y
+             && b->position.y >= grids[i][j]->bounds_y.x && b->position.y < grids[i][j]->bounds_y.y) {
+                 return *grids[i][j];
+             }
+        }
+    }
+}
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+bool GridBin::insert(Boid *b) {
+    // find grid to insert boid in
+    Grid grid_idx = which_grid(b);
+    return grid_idx.insert(b);
+}
 
+
+void GridBin::query(Boid *b, std::function<void(Boid *)> &iterate_function) {
+    // find grid query
+    Grid grid_idx = which_grid(b);
+    grid_idx.query(b, iterate_function);
+}
+
+// void GridBin::visualize();
+
+void GridBin::clear() {
+    for (int i = 0; i < gridDim_M; i++) {
+        for (int j = 0; j < gridDim_N; j++) {
+            grids[i][j]->clear();
+        }
+    }
 }

@@ -8,6 +8,7 @@
 
 #include <glad/glad.h>
 #include <vector>
+#include "GridBin.hpp"
 #include "EntityRenderer.h"
 #include "Boid.h"
 
@@ -21,6 +22,7 @@ public:
 private:
     GLuint Width, Height;
     std::vector<Boid *> boids;
+    GridBin *grid = NULL;
 };
 
 

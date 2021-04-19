@@ -31,6 +31,8 @@
 #define ER_DEFAULT_SIZE 5.0f
 #define ER_DEFAULT_ROT 0.0f
 
+#define NODE_CAPACITY 200
+
 // The Width of the screen
 const unsigned int SCREEN_WIDTH = 1700;
 // The height of the screen

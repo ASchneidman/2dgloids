@@ -17,7 +17,7 @@ class Boid {
 private:
 public:
     Boid(glm::vec2 &initialPos, glm::vec2 &initialVel,
-            float width, float height): width(width), height(height) {
+            float width, float height, int index): width(width), height(height), index(index) {
         this->position = initialPos;
         velocity = initialVel;
         this->rotation = M_PI;
@@ -38,6 +38,8 @@ public:
     float width, height;
     glm::vec3 color;
     glm::vec3 natural_color;
+    int index;
+    int num_flockmates = 0;
 };
 
 

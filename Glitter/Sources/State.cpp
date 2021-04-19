@@ -4,6 +4,7 @@
 
 #include "State.h"
 #include "resourcemanager.h"
+#include "GridBin.hpp"
 #include <random>
 #include <map>
 #include <iterator>
@@ -49,13 +50,20 @@ void State::Init() {
         glm::vec2 initVel = glm::vec2(glm::sin(theta), glm::cos(theta));
     
         glm::vec2 initialVel = initVel * randSpeed(generator);
-        this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height));
+        this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height, i));
     }
+
+    grid = new GridBin();
 }
 
 void State::Update(GLfloat dt) {
-    std::map<Boid *, glm::vec2> forces;
-    std::map<Boid *, glm::vec3> colors;
+    // std::map<Boid *, glm::vec2> forces;
+    // std::map<Boid *, glm::vec3> colors;
+    glm::vec2 forces[NUM_BOIDS];
+    grid->clear();
+    for (Boid *b : boids) {
+        grid->insert(b);
+    }
     for (size_t j = 0; j < this->boids.size(); j++) {
         Boid *b = boids[j];
 
@@ -72,16 +80,20 @@ void State::Update(GLfloat dt) {
 
         glm::vec3 mincolor = b->natural_color;
 
-        for (size_t i = 0; i < this->boids.size(); i++) {
-            Boid *other = this->boids[i];
-            if (b == other)
-                continue;
+        // for (size_t i = 0; i < this->boids.size(); i++) {
+        //     Boid *other = this->boids[i];
+        //     if (b == other)
+        //         continue;
+         std::function<void(Boid*)> lambda = [&](Boid *other) {
+            if (other->index == b->index) {
+                return;
+            }
 
             // Collision avoidance
             float dist = glm::distance(other->position, b->position);
             // dir is already normalized, so dont need to take norm
             if (dist < nearby_dist) {
-                if (i < j) {
+                if (other->index < b->index) {
                     mincolor = other->color;
                 }
 
@@ -92,7 +104,9 @@ void State::Update(GLfloat dt) {
                 glm::vec2 dir = glm::normalize(b->position - other->position);
                 forceCollision += dir * scaling;
             }
-        }
+        };
+
+        grid->query(b, lambda);
 
         if (numClose > 0) {
             forceAlign = flockHeading;
@@ -113,22 +127,26 @@ void State::Update(GLfloat dt) {
             force = forceCollision + forceAlign + forcePos;
 
         }
-        glm::vec3 bhsv = glm::hsvColor(b->color);
-        glm::vec3 otherhsv = glm::hsvColor(mincolor);
-        glm::vec3 color = glm::vec3(.4f * bhsv.x + .6f * otherhsv.x, bhsv.y, bhsv.z);
-        colors[b] = glm::rgbColor(color);
-        //colors[b] = .4f * b->color + (.6f) * mincolor;
-        b->color = colors[b];
+        // glm::vec3 bhsv = glm::hsvColor(b->color);
+        // glm::vec3 otherhsv = glm::hsvColor(mincolor);
+        // glm::vec3 color = glm::vec3(.4f * bhsv.x + .6f * otherhsv.x, bhsv.y, bhsv.z);
+        // colors[b] = glm::rgbColor(color);
+        // colors[b] = .4f * b->color + (.6f) * mincolor;
+        // b->color = colors[b];
+
+        b->color = .4f * b->color + (.6f) * mincolor;
 
 
         float theta = randDir(generator);
         forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
         force += forceRand;
 
-        forces[b] = force;
+        // forces[b] = force;
+        forces[b->index] = force;
+        b->num_flockmates = numClose;
     }
     for (Boid *b : this->boids) {
-        b->Update(forces[b], dt);
+        b->Update(forces[b->index], dt);
         //b->color = colors[b];
     }
 }

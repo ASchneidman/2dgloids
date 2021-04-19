@@ -4,7 +4,7 @@
 
 #include "Boid.h"
 #include <math.h>
-
+#include <glm/gtx/color_space.hpp>
 
 static glm::vec2 yaxis = glm::vec2(0.0f, 1.0f);
 
@@ -35,8 +35,12 @@ void Boid::Update(glm::vec2 force, float dt) {
     
     glm::vec2 change = this->velocity * dt;
 
-    if (change.x + position.x < 0 || change.x + position.x >= this->width || change.y + position.y < 0 || change.y + position.y >= this->height) {
-        velocity *= -1;
+    if (change.x + position.x < 0 || change.x + position.x >= this->width) {
+        velocity *= glm::vec2(-1.0f, 1.0f);
+        change = velocity * dt;
+    }
+    if (change.y + position.y < 0 || change.y + position.y >= this->height) {
+        velocity *= glm::vec2(1.0f, -1.0f);
         change = velocity * dt;
     }
 
@@ -53,6 +57,8 @@ void Boid::Update(glm::vec2 force, float dt) {
     }
     this->position = glm::vec2(wrap_value(this->position.x, this->width),
                                 wrap_value(this->position.y, this->height));
+
+    color = glm::rgbColor(glm::vec3((rotation + glm::pi<float>()) * 180.0f/glm::pi<float>(), .7, 1.0));
 }
 
 float Boid::GetX() {
