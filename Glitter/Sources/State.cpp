@@ -11,9 +11,12 @@
 #include <iostream>
 #include <omp.h>
 #include <glm/gtx/color_space.hpp>
+#include <GLFW/glfw3.h>
 
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
 
+int do_update = 0;
+int update_frames = 1;
 
 std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
 
@@ -21,8 +24,6 @@ std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
 EntityRenderer *Renderer;
 std::default_random_engine generator(10);
 std::uniform_real_distribution<float> distribution(-100.0,100.0);
-
-static std::map<int, std::map<int, std::map<long, Boid *>>> boidMap;
 
 State::State(GLuint width, GLuint height) : Width(width), Height(height) {}
 
@@ -58,21 +59,27 @@ void State::Init() {
 
 
 void State::Update(GLfloat dt) {
+    float s,e;
     glm::vec2 forces[NUM_BOIDS];
 
-    /*
-    if (qt != NULL) {
-        delete qt;
+    if (do_update % update_frames == 0) {
+        s = glfwGetTime();
+        qt->clear();
+        e = glfwGetTime();
+        //printf("clear time: %.3f\n", e-s);
+        s = glfwGetTime();
+        #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
+        for (size_t i = 0; i < boids.size(); i++) {
+            Boid *b = boids[i];
+            qt->insert(b);
+        }
+        e = glfwGetTime();
+        //printf("insert time: %.3f\n", e-s);
+        do_update = 0;
     }
-    qt = new QuadTreeHead(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height));
-    */
+    do_update += 1;
 
-    qt->clear();
-    for (Boid *b : boids) {
-        qt->insert(b);
-    }
-
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         glm::vec2 forceCollision(0.0f, 0.0f);
@@ -84,20 +91,17 @@ void State::Update(GLfloat dt) {
         glm::vec2 flockCenter(0.0, 0.0);
         glm::vec2 flockHeading(0.0, 0.0);
         int numClose = 0;
-        glm::vec3 mincolor = b->natural_color;
 
+        std::vector<Boid *> found_boids;
+
+        /*
         std::function<void(Boid*)> lambda = [&](Boid *other) {
             if (other->index == b->index) {
                 return;
             }
             // Collision avoidance
             float dist = glm::distance(other->position, b->position);
-            // dir is already normalized, so dont need to take norm
             if (dist < nearby_dist) {
-                if (other->index < b->index) {
-                    mincolor = other->color;
-                }
-
                 flockCenter += other->position;
                 flockHeading += other->velocity;
                 numClose += 1;
@@ -106,8 +110,25 @@ void State::Update(GLfloat dt) {
                 forceCollision += dir * scaling;
             }
         };
+        */
 
-        qt->query(b, lambda);
+        //qt->query(b, lambda);
+        qt->query(b, found_boids);
+        for (Boid *other : found_boids) {
+            if (other->index == b->index) {
+                continue;
+            }
+            // Collision avoidance
+            float dist = glm::distance(other->position, b->position);
+            if (dist < nearby_dist) {
+                flockCenter += other->position;
+                flockHeading += other->velocity;
+                numClose += 1;
+                float scaling = (1.0f / (dist * dist));
+                glm::vec2 dir = glm::normalize(b->position - other->position);
+                forceCollision += dir * scaling;
+            }
+        }
     
         if (numClose > 0) {
             forceAlign = flockHeading;
@@ -128,22 +149,20 @@ void State::Update(GLfloat dt) {
             force = forceCollision + forceAlign + forcePos;
 
         }
-        b->color = .4f * b->color + (.6f) * mincolor;
 
-
-        float theta = randDir(generator);
-        forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
-        force += forceRand;
+        //float theta = randDir(generator);
+        //forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
+        //force += forceRand;
 
         glm::vec2 forceGravity(0.0f, 1000.0f);
         force += forceGravity * gravity_weight;
 
         forces[b->index] = force;
-        b->num_flockmates = numClose;
     }
-    
 
-    for (Boid *b : this->boids) {
+    #pragma omp parallel for schedule(static) num_threads(THREADS)
+    for (size_t i = 0; i < boids.size(); i++) {
+        Boid *b = boids[i];
         b->Update(forces[b->index], dt);
     }
 
@@ -153,7 +172,6 @@ void State::Render() {
     if (qt && VISUALIZE) {
         qt->visualize();
     }
-    //qt->clear();
 }
 
 State::~State() {

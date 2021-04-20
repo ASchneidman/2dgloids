@@ -16,7 +16,7 @@
 
 // Boid related constants
 
-#define NUM_BOIDS 2000
+#define NUM_BOIDS 100000
 #define BOID_SPEED 100.0f
 
 #define MAX_VEL 1800.0f
@@ -27,17 +27,19 @@
 #define POSITION_WEIGHT (1.f)
 #define GRAVITY_WEIGHT (0.f)
 
-#define NEARBY_DIST 70.0f
+#define NEARBY_DIST 30.0f
 
-#define ER_DEFAULT_SIZE 5.0f
+#define ER_DEFAULT_SIZE 1.0f
 #define ER_DEFAULT_ROT 0.0f
 
-#define VISUALIZE (true)
+#define VISUALIZE (false)
 
-#define NODE_CAPACITY 100
+#define NODE_CAPACITY 250
+
+#define THREADS 8
 
 // The Width of the screen
-const unsigned int SCREEN_WIDTH = 1500;
+const unsigned int SCREEN_WIDTH = 1600;
 // The height of the screen
 const unsigned int SCREEN_HEIGHT = 800;
 

@@ -56,7 +56,6 @@ int main(int argc, char * argv[]) {
     float lastFrame = 0.0f;
 
     float averageFrameTime = 0.0f;
-    float startTime = glfwGetTime();
     // Rendering Loop
     int i = 0;
     while (glfwWindowShouldClose(mWindow) == false) {
@@ -81,10 +80,13 @@ int main(int argc, char * argv[]) {
         state.Render();
         float render_end = glfwGetTime();
 
-        printf("\rUpdate time: %.3f, Render time: %.3f, Max Velocity: %.3f, View Distance: %.3f, Collision Weight: %.3f, Align Weight: %.3f, Position Weight: %.3f", 
-        update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
-        collision_weight, align_weight, position_weight);
         
+        printf("\rUpdate: %.3f s, Render: %.3f s, Max Vel.: %.3f, View Distance: %.3f, Collision: %.3f, Align: %.3f, Position: %.3f, Gravity: %.3f", 
+        update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
+        collision_weight, align_weight, position_weight, gravity_weight);
+        
+        
+        averageFrameTime += update_end - update_start;
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
@@ -92,6 +94,9 @@ int main(int argc, char * argv[]) {
         i += 1;
     }   
     std::cout << std::endl;
+
+    printf("Average update time: %.3f\n", averageFrameTime / i);
+
     glfwTerminate();
 
     return EXIT_SUCCESS;
