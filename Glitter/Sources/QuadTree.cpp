@@ -179,26 +179,30 @@ bool qt_insert(QuadTree_t *qt, Boid *b, float x_min, float x_max, float y_min, f
     if (success) {
         return true;
     }
-    int did_subdivde = 0;
-    omp_set_lock(qt->subdivide_lock);
-    if (!qt->is_subdivided) {
-        did_subdivde = 1;
-        qt->is_subdivided = true;
 
-        if (qt->upperLeft == NULL) {
-            // alloc all in close proximity
-            QuadTree_t *children = (QuadTree_t*)malloc(sizeof(QuadTree_t) * 4);
-            qt->upperLeft = children;
-            qt->upperRight = &children[1];
-            qt->lowerLeft = &children[2];
-            qt->lowerRight = &children[3];
-            qt_init(qt->upperLeft);
-            qt_init(qt->upperRight);
-            qt_init(qt->lowerLeft);
-            qt_init(qt->lowerRight);
+
+    int did_subdivde = 0;
+    if (!qt->is_subdivided) {
+        omp_set_lock(qt->subdivide_lock);
+        if (!qt->is_subdivided) {
+            did_subdivde = 1;
+
+            if (qt->upperLeft == NULL) {
+                // alloc all in close proximity
+                QuadTree_t *children = (QuadTree_t*)malloc(sizeof(QuadTree_t) * 4);
+                qt->upperLeft = children;
+                qt->upperRight = &children[1];
+                qt->lowerLeft = &children[2];
+                qt->lowerRight = &children[3];
+                qt_init(qt->upperLeft);
+                qt_init(qt->upperRight);
+                qt_init(qt->lowerLeft);
+                qt_init(qt->lowerRight);
+            }
+            qt->is_subdivided = true;
         }
+        omp_unset_lock(qt->subdivide_lock);
     }
-    omp_unset_lock(qt->subdivide_lock);
 
     if (did_subdivde) {
         // This can be done w/o the subdivide lock
