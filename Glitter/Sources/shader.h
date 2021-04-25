@@ -40,9 +40,9 @@ public:
     void    SetVector4f (const char *name, float x, float y, float z, float w, bool useShader = false);
     void    SetVector4f (const char *name, const glm::vec4 &value, bool useShader = false);
     void    SetMatrix4  (const char *name, const glm::mat4 &matrix, bool useShader = false);
+    void    checkCompileErrors(unsigned int object, std::string type);
 private:
     // checks if compilation or linking failed and if so, print the error logs
-    void    checkCompileErrors(unsigned int object, std::string type);
 };
 
 #endif

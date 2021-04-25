@@ -16,7 +16,7 @@
 
 // Boid related constants
 
-#define NUM_BOIDS 100000
+#define NUM_BOIDS 504
 #define BOID_SPEED 100.0f
 
 #define MAX_VEL 1800.0f
@@ -29,7 +29,7 @@
 
 #define NEARBY_DIST 30.0f
 
-#define ER_DEFAULT_SIZE 1.0f
+#define ER_DEFAULT_SIZE 5.0f
 #define ER_DEFAULT_ROT 0.0f
 
 #define VISUALIZE (false)
@@ -42,6 +42,7 @@
 const unsigned int SCREEN_WIDTH = 1600;
 // The height of the screen
 const unsigned int SCREEN_HEIGHT = 800;
+
 
 extern float max_velocity;
 extern float nearby_dist;

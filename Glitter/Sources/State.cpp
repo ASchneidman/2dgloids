@@ -58,83 +58,113 @@ void State::Init() {
     }
 
 
-
     // CODE TO LOAD AND COMPILE THE FORCE SHADER
     std::string forceShaderCode;
-    std::ifstream forceShaderFile("Glitter/Shaders/boid_force.vert");
+    std::ifstream forceShaderFile("Glitter/boid_force.vert");
+
     std::stringstream forceShaderStream;
-    
-    forceShaderStream << forceShaderFile.rdbuf();
+    forceShaderStream << "#version 330 core\n#define NUM_BOIDS " << NUM_BOIDS << "\n" << forceShaderFile.rdbuf();
 
     forceShaderFile.close();
 
+    // Create shader program
+    const char *forceShaderStr = forceShaderStream.str().c_str();
+    forceShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(forceShader, 1, &forceShaderStr, nullptr);
+    glCompileShader(forceShader);
+
+    sh.checkCompileErrors(forceShader, "VERTEX");
+
+    forceProgram = glCreateProgram();
+    glAttachShader(forceProgram, forceShader);
+
+    const GLchar* feedbackNames[2] = {"force_x", "force_y"};
+    glTransformFeedbackVaryings(forceProgram, 2, feedbackNames, GL_SEPARATE_ATTRIBS);
+    glLinkProgram(forceProgram);
+
+    glUseProgram(forceProgram);
+
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+
+    // Generate the buffers
+    glGenBuffers(1, &force_x_buffer);
+    glGenBuffers(1, &force_y_buffer);
+
+    // Bind them
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, force_x_buffer);
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, force_y_buffer);
+
+    glBindVertexArray(0);
+
+    positions = new GLfloat[2 * NUM_BOIDS];
+    velocities = new GLfloat[2 * NUM_BOIDS];
+    forces_x = new GLfloat[NUM_BOIDS];
+    forces_y = new GLfloat[NUM_BOIDS];
 }
 
 
+
 void State::Update(GLfloat dt) {
-    glm::vec2 forces[NUM_BOIDS];
+    glUseProgram(forceProgram);
 
-    #pragma omp parallel for
-    for (size_t i = 0; i < boids.size(); i++) {
+    #pragma omp parallel for schedule(static) 
+    for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
-        glm::vec2 forceCollision(0.0f, 0.0f);
-        glm::vec2 forceAlign(0.0f);
-        glm::vec2 forcePos(0.0f);
-        glm::vec2 force(0.0f);
-        glm::vec2 forceRand(0.0f);
-
-        glm::vec2 flockCenter(0.0, 0.0);
-        glm::vec2 flockHeading(0.0, 0.0);
-        int numClose = 0;
-
-        for (Boid *other : boids) {
-            if (other->index == b->index) {
-                continue;
-            }
-            // Collision avoidance
-            float dist = glm::distance(other->position, b->position);
-            if (dist < nearby_dist) {
-                flockCenter += other->position;
-                flockHeading += other->velocity;
-                numClose += 1;
-                float scaling = (1.0f / (dist * dist));
-                glm::vec2 dir = glm::normalize(b->position - other->position);
-                forceCollision += dir * scaling;
-            }
-        }
-    
-        if (numClose > 0) {
-            forceAlign = flockHeading;
-            forceAlign /= numClose;
-
-            flockCenter /= numClose;
-            forcePos = (flockCenter - b->position);
-
-            forceCollision = b->SteerToward(forceCollision);
-            forceCollision *= collision_weight;
-
-            forceAlign = b->SteerToward(forceAlign);
-            forceAlign *= align_weight;
-
-            forcePos = b->SteerToward(forcePos);
-            forcePos *= position_weight;
-
-            force = forceCollision + forceAlign + forcePos;
-
-        }
-
-        glm::vec2 forceGravity(0.0f, 1000.0f);
-        force += forceGravity * gravity_weight;
-
-        forces[b->index] = force;
+        positions[2*i] = b->position.x;
+        positions[2*i+1] = b->position.y;
+        velocities[2*i] = b->velocity.x;
+        velocities[2*i+1] = b->velocity.y;
     }
 
-    #pragma omp parallel for
-    for (size_t i = 0; i < boids.size(); i++) {
-        Boid *b = boids[i];
-        b->Update(forces[b->index], dt);
-    }
 
+
+
+    glBindVertexArray(vao);
+
+    glUniform2fv(glGetUniformLocation(forceProgram, "positions"), NUM_BOIDS, positions);
+    glUniform2fv(glGetUniformLocation(forceProgram, "velocities"), NUM_BOIDS, velocities);
+    glUniform1f(glGetUniformLocation(forceProgram, "nearby_dist"), nearby_dist);
+    glUniform1f(glGetUniformLocation(forceProgram, "max_velocity"), max_velocity);
+    glUniform1f(glGetUniformLocation(forceProgram, "max_force"), (float)MAX_FORCE);
+
+
+    // Allocate space for the results x
+    glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);
+    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
+    // Allocate space for the results y
+    glBindBuffer(GL_ARRAY_BUFFER, force_y_buffer);
+    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
+
+    // Tell opengl where to read/write the data
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, force_x_buffer);
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, force_y_buffer);
+
+
+    // Actually perform the computation
+    glEnable(GL_RASTERIZER_DISCARD);
+
+    glBeginTransformFeedback(GL_POINTS);
+        glDrawArrays(GL_POINTS, 0, NUM_BOIDS);
+    glEndTransformFeedback();
+
+    glDisable(GL_RASTERIZER_DISCARD);
+
+    glFlush();
+    // Bind buffer to read from
+    glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, NUM_BOIDS * sizeof(GLfloat), forces_x);
+
+    glBindBuffer(GL_ARRAY_BUFFER, force_y_buffer);
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, NUM_BOIDS * sizeof(GLfloat), forces_y);
+
+    glBindVertexArray(0);
+
+    for (int i = 0; i < boids.size(); i++) {
+        Boid *b = boids[i];
+        b->Update(glm::vec2(forces_x[i], forces_y[i]), dt);
+    }
 }
 void State::Render() {
     Renderer->DrawBoids(boids);

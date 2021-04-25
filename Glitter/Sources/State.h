@@ -21,6 +21,19 @@ public:
 private:
     GLuint Width, Height;
     std::vector<Boid *> boids;
+
+    GLuint forceShader;
+    GLuint forceProgram;
+
+    GLuint force_x_buffer;
+    GLuint force_y_buffer;
+
+    GLuint vao;
+
+    GLfloat *positions;
+    GLfloat *velocities;
+    GLfloat *forces_x;
+    GLfloat *forces_y;
 };
 
 

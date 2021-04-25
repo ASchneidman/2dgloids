@@ -1,11 +1,14 @@
-#version 330 core
-in int index;
-out vec2 out_force;
+
+out float force_x;
+out float force_y;
 
 uniform vec2 positions[NUM_BOIDS];
 uniform vec2 velocities[NUM_BOIDS];
 
 uniform float nearby_dist;
+uniform float max_velocity;
+uniform float max_force;
+
 
 vec2 clamp_magnitude(vec2 vec, float max_value) {
     if (length(vec) > max_value) {
@@ -17,8 +20,9 @@ vec2 clamp_magnitude(vec2 vec, float max_value) {
 }
 
 vec2 SteerToward(vec2 force, vec2 velocity) {
-    return clamp_magnitude(normalize(force) * max_velocity - velocity, MAX_FORCE); 
+    return clamp_magnitude(normalize(force) * max_velocity - velocity, max_force); 
 }
+
 
 void main() {
     vec2 forceCollision = vec2(0.0, 0.0);
@@ -32,11 +36,12 @@ void main() {
 
     int numClose = 0;
 
-    vec2 my_position = positions[index];
-    vec2 my_velocity = velocities[index];
+    vec2 my_position = positions[gl_VertexID];
+    vec2 my_velocity = velocities[gl_VertexID];
+    
 
     for (int i = 0; i < NUM_BOIDS; i++) {
-        if (i == index) {
+        if (i == gl_VertexID) {
             continue;
         }
         vec2 other_position = positions[i];
@@ -47,8 +52,8 @@ void main() {
             flockHeading += other_velocity;
             numClose += 1;
             // extra dist is so dir is normalized
-            float scaling = (1.0f / (dist * dist * dist));
-            glm::vec2 dir = my_position - other_position;
+            float scaling = (1.0f / (dist * dist));
+            vec2 dir = normalize(my_position - other_position);
             forceCollision += dir * scaling;
         }
     }
@@ -58,20 +63,18 @@ void main() {
         forceAlign /= numClose;
 
         flockCenter /= numClose;
-        forcePos = (flockCenter - b->position);
+        forcePos = (flockCenter - my_position);
 
         forceCollision = SteerToward(forceCollision, my_velocity);
-        forceCollision *= collision_weight;
 
-        forceAlign = b->SteerToward(forceAlign, my_velocity);
-        forceAlign *= align_weight;
+        forceAlign = SteerToward(forceAlign, my_velocity);
 
-        forcePos = b->SteerToward(forcePos, my_velocity);
-        forcePos *= position_weight;
+        forcePos = SteerToward(forcePos, my_velocity);
 
         force = forceCollision + forceAlign + forcePos;
     }
 
-    out_force = force;
+    force_x = force.x;
+    force_y = force.y;
 }
 
