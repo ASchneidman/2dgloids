@@ -17,6 +17,7 @@ float nearby_dist = NEARBY_DIST;
 float collision_weight = COLLISION_WEIGHT;
 float align_weight = ALIGN_WEIGHT;
 float position_weight = POSITION_WEIGHT;
+float gravity_weight = GRAVITY_WEIGHT;
 
 State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -55,7 +56,6 @@ int main(int argc, char * argv[]) {
     float lastFrame = 0.0f;
 
     float averageFrameTime = 0.0f;
-    float startTime = glfwGetTime();
     // Rendering Loop
     int i = 0;
     while (glfwWindowShouldClose(mWindow) == false) {
@@ -80,12 +80,13 @@ int main(int argc, char * argv[]) {
         state.Render();
         float render_end = glfwGetTime();
 
-        printf("\rUpdate time: %.3f, Render time: %.3f, Max Velocity: %.3f, View Distance: %.3f, Collision Weight: %.3f, Align Weight: %.3f, Position Weight: %.3f", 
+        
+        printf("\rUpdate: %.3f s, Render: %.3f s, Max Vel.: %.3f, View Distance: %.3f, Collision: %.3f, Align: %.3f, Position: %.3f, Gravity: %.3f", 
         update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
-        collision_weight, align_weight, position_weight);
-
-        //printf("Update time: %.3f\n", update_end - update_start);
-        //printf("Render time: %.3f\n\n", render_end - render_start);
+        collision_weight, align_weight, position_weight, gravity_weight);
+        
+        
+        averageFrameTime += update_end - update_start;
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
@@ -93,6 +94,9 @@ int main(int argc, char * argv[]) {
         i += 1;
     }   
     std::cout << std::endl;
+
+    printf("Average update time: %.3f\n", averageFrameTime / i);
+
     glfwTerminate();
 
     return EXIT_SUCCESS;
@@ -133,6 +137,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         case GLFW_KEY_6:
             position_weight -= .1f;
             break;
+        case GLFW_KEY_7:
+            gravity_weight += .1f;
+            break;
+        case GLFW_KEY_8:
+            gravity_weight -= .1f;
+            break;
         default:
             break;
         }
@@ -142,4 +152,5 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     collision_weight = std::max(collision_weight, 0.0f);
     align_weight = std::max(align_weight, 0.0f);
     position_weight = std::max(position_weight, 0.0f);
+    gravity_weight = std::max(gravity_weight, 0.0f);
 }

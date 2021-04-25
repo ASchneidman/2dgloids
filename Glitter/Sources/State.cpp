@@ -4,15 +4,19 @@
 
 #include "State.h"
 #include "resourcemanager.h"
+#include "QuadTree.hpp"
 #include <random>
 #include <map>
 #include <iterator>
 #include <iostream>
 #include <omp.h>
 #include <glm/gtx/color_space.hpp>
+#include <GLFW/glfw3.h>
 
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
 
+int do_update = 0;
+int update_frames = 1;
 
 std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
 
@@ -20,8 +24,6 @@ std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
 EntityRenderer *Renderer;
 std::default_random_engine generator(10);
 std::uniform_real_distribution<float> distribution(-100.0,100.0);
-
-static std::map<int, std::map<int, std::map<long, Boid *>>> boidMap;
 
 State::State(GLuint width, GLuint height) : Width(width), Height(height) {}
 
@@ -49,16 +51,37 @@ void State::Init() {
         glm::vec2 initVel = glm::vec2(glm::sin(theta), glm::cos(theta));
     
         glm::vec2 initialVel = initVel * randSpeed(generator);
-        this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height));
+        this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height, i));
     }
+
+    qt = new QuadTreeHead(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height));
 }
 
-void State::Update(GLfloat dt) {
-    std::map<Boid *, glm::vec2> forces;
-    std::map<Boid *, glm::vec3> colors;
-    for (size_t j = 0; j < this->boids.size(); j++) {
-        Boid *b = boids[j];
 
+void State::Update(GLfloat dt) {
+    float s,e;
+    glm::vec2 forces[NUM_BOIDS];
+
+    if (do_update % update_frames == 0) {
+        s = glfwGetTime();
+        qt->clear();
+        e = glfwGetTime();
+        //printf("clear time: %.3f\n", e-s);
+        s = glfwGetTime();
+        #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
+        for (size_t i = 0; i < boids.size(); i++) {
+            Boid *b = boids[i];
+            qt->insert(b);
+        }
+        e = glfwGetTime();
+        //printf("insert time: %.3f\n", e-s);
+        do_update = 0;
+    }
+    do_update += 1;
+
+    #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
+    for (size_t i = 0; i < boids.size(); i++) {
+        Boid *b = boids[i];
         glm::vec2 forceCollision(0.0f, 0.0f);
         glm::vec2 forceAlign(0.0f);
         glm::vec2 forcePos(0.0f);
@@ -67,24 +90,37 @@ void State::Update(GLfloat dt) {
 
         glm::vec2 flockCenter(0.0, 0.0);
         glm::vec2 flockHeading(0.0, 0.0);
-
         int numClose = 0;
 
-        glm::vec3 mincolor = b->natural_color;
+        std::vector<Boid *> found_boids;
 
-        for (size_t i = 0; i < this->boids.size(); i++) {
-            Boid *other = this->boids[i];
-            if (b == other)
-                continue;
-
+        /*
+        std::function<void(Boid*)> lambda = [&](Boid *other) {
+            if (other->index == b->index) {
+                return;
+            }
             // Collision avoidance
             float dist = glm::distance(other->position, b->position);
-            // dir is already normalized, so dont need to take norm
             if (dist < nearby_dist) {
-                if (i < j) {
-                    mincolor = other->color;
-                }
+                flockCenter += other->position;
+                flockHeading += other->velocity;
+                numClose += 1;
+                float scaling = (1.0f / (dist * dist));
+                glm::vec2 dir = glm::normalize(b->position - other->position);
+                forceCollision += dir * scaling;
+            }
+        };
+        */
 
+        //qt->query(b, lambda);
+        qt->query(b, found_boids);
+        for (Boid *other : found_boids) {
+            if (other->index == b->index) {
+                continue;
+            }
+            // Collision avoidance
+            float dist = glm::distance(other->position, b->position);
+            if (dist < nearby_dist) {
                 flockCenter += other->position;
                 flockHeading += other->velocity;
                 numClose += 1;
@@ -93,7 +129,7 @@ void State::Update(GLfloat dt) {
                 forceCollision += dir * scaling;
             }
         }
-
+    
         if (numClose > 0) {
             forceAlign = flockHeading;
             forceAlign /= numClose;
@@ -113,27 +149,29 @@ void State::Update(GLfloat dt) {
             force = forceCollision + forceAlign + forcePos;
 
         }
-        glm::vec3 bhsv = glm::hsvColor(b->color);
-        glm::vec3 otherhsv = glm::hsvColor(mincolor);
-        glm::vec3 color = glm::vec3(.4f * bhsv.x + .6f * otherhsv.x, bhsv.y, bhsv.z);
-        colors[b] = glm::rgbColor(color);
-        //colors[b] = .4f * b->color + (.6f) * mincolor;
-        b->color = colors[b];
 
+        //float theta = randDir(generator);
+        //forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
+        //force += forceRand;
 
-        float theta = randDir(generator);
-        forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
-        force += forceRand;
+        glm::vec2 forceGravity(0.0f, 1000.0f);
+        force += forceGravity * gravity_weight;
 
-        forces[b] = force;
+        forces[b->index] = force;
     }
-    for (Boid *b : this->boids) {
-        b->Update(forces[b], dt);
-        //b->color = colors[b];
+
+    #pragma omp parallel for schedule(static) num_threads(THREADS)
+    for (size_t i = 0; i < boids.size(); i++) {
+        Boid *b = boids[i];
+        b->Update(forces[b->index], dt);
     }
+
 }
 void State::Render() {
     Renderer->DrawBoids(boids);
+    if (qt && VISUALIZE) {
+        qt->visualize();
+    }
 }
 
 State::~State() {

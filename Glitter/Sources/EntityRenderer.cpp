@@ -4,6 +4,7 @@
 
 #include "EntityRenderer.h"
 #include <iostream>
+#include <omp.h>
 
 #define SIDE_POS ((float)(sqrt(3.0f) / 4.0f))
 
@@ -78,6 +79,7 @@ void EntityRenderer::DrawBoids(std::vector<Boid *> &boids) {
 
     
     glBindVertexArray(this->VAO);
+    //#pragma omp parallel for
     for (size_t i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         glm::mat4 model = glm::mat4(1.0f);

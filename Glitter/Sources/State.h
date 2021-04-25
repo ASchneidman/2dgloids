@@ -10,6 +10,7 @@
 #include <vector>
 #include "EntityRenderer.h"
 #include "Boid.h"
+#include "QuadTree.hpp"
 
 class State {
 public:
@@ -21,6 +22,7 @@ public:
 private:
     GLuint Width, Height;
     std::vector<Boid *> boids;
+    QuadTreeHead *qt = NULL;
 };
 
 

@@ -16,7 +16,7 @@
 
 // Boid related constants
 
-#define NUM_BOIDS 1500
+#define NUM_BOIDS 10000
 #define BOID_SPEED 100.0f
 
 #define MAX_VEL 1800.0f
@@ -25,16 +25,23 @@
 #define COLLISION_WEIGHT (1.f)
 #define ALIGN_WEIGHT (1.f)
 #define POSITION_WEIGHT (1.f)
+#define GRAVITY_WEIGHT (0.f)
 
-#define NEARBY_DIST 70.0f
+#define NEARBY_DIST 30.0f
 
 #define ER_DEFAULT_SIZE 5.0f
 #define ER_DEFAULT_ROT 0.0f
 
+#define VISUALIZE (false)
+
+#define NODE_CAPACITY 250
+
+#define THREADS 8
+
 // The Width of the screen
-const unsigned int SCREEN_WIDTH = 1700;
+const unsigned int SCREEN_WIDTH = 1600;
 // The height of the screen
-const unsigned int SCREEN_HEIGHT = 900;
+const unsigned int SCREEN_HEIGHT = 800;
 
 extern float max_velocity;
 extern float nearby_dist;
@@ -42,5 +49,6 @@ extern float nearby_dist;
 extern float collision_weight;
 extern float align_weight;
 extern float position_weight;
+extern float gravity_weight;
 
 #endif //~ Glitter Header

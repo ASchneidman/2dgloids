@@ -9,20 +9,17 @@
 #include <glm/vec2.hpp>
 #include <glm/glm.hpp>
 #include "glitter.hpp"
-//#include "EntityRenderer.h"
-
 
 
 class Boid {
 private:
 public:
     Boid(glm::vec2 &initialPos, glm::vec2 &initialVel,
-            float width, float height): width(width), height(height) {
+            float width, float height, int index): width(width), height(height), index(index) {
         this->position = initialPos;
         velocity = initialVel;
         this->rotation = M_PI;
         this->color = glm::vec3((rand() % 10) / 9.0f, (rand() % 10) / 9.0f, (rand() % 10) / 9.0f);
-        this->natural_color = color;
     }
     ~Boid() = default;
     void Update(glm::vec2 force, float dt);
@@ -37,7 +34,7 @@ public:
     float rotation;
     float width, height;
     glm::vec3 color;
-    glm::vec3 natural_color;
+    int index;
 };
 
 
