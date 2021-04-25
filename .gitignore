@@ -4,3 +4,4 @@ cmake-build-debug/
 Glitter/Vendor/fltk-1.3.5/*
 .vscode/*
 */.DS_Store
+Debug/*

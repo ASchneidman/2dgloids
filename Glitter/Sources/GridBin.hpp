@@ -4,6 +4,7 @@
 #include "glitter.hpp"
 #include "Boid.h"
 #include <functional>
+#include <vector>
 
 class Grid{
     public:
@@ -13,8 +14,7 @@ class Grid{
         glm::vec2 bounds_x; // left and right bounds of grid
         glm::vec2 bounds_y; // top and bottom bounds of grid
 
-        int num_boids;
-        Boid *boids[NODE_CAPACITY];
+        std::vector<Boid *> *boids;
 
         bool insert(Boid *b);
         void query(Boid *b, std::function<void(Boid *)> &iterate_function);
@@ -35,7 +35,7 @@ class GridBin{
         static const int gridDim_M = 20;
         static const int gridDim_N = 10;
 
-        Grid which_grid(Boid *b);
+        Grid *which_grid(Boid *b);
         bool insert(Boid *b);
         void query(Boid *b, std::function<void(Boid *)> &iterate_function);
         // void visualize();

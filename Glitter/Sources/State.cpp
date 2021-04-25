@@ -57,8 +57,6 @@ void State::Init() {
 }
 
 void State::Update(GLfloat dt) {
-    // std::map<Boid *, glm::vec2> forces;
-    // std::map<Boid *, glm::vec3> colors;
     glm::vec2 forces[NUM_BOIDS];
     grid->clear();
     for (Boid *b : boids) {
@@ -80,10 +78,6 @@ void State::Update(GLfloat dt) {
 
         glm::vec3 mincolor = b->natural_color;
 
-        // for (size_t i = 0; i < this->boids.size(); i++) {
-        //     Boid *other = this->boids[i];
-        //     if (b == other)
-        //         continue;
          std::function<void(Boid*)> lambda = [&](Boid *other) {
             if (other->index == b->index) {
                 return;
@@ -127,27 +121,15 @@ void State::Update(GLfloat dt) {
             force = forceCollision + forceAlign + forcePos;
 
         }
-        // glm::vec3 bhsv = glm::hsvColor(b->color);
-        // glm::vec3 otherhsv = glm::hsvColor(mincolor);
-        // glm::vec3 color = glm::vec3(.4f * bhsv.x + .6f * otherhsv.x, bhsv.y, bhsv.z);
-        // colors[b] = glm::rgbColor(color);
-        // colors[b] = .4f * b->color + (.6f) * mincolor;
-        // b->color = colors[b];
-
-        b->color = .4f * b->color + (.6f) * mincolor;
-
-
         float theta = randDir(generator);
         forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
         force += forceRand;
 
-        // forces[b] = force;
         forces[b->index] = force;
         b->num_flockmates = numClose;
     }
     for (Boid *b : this->boids) {
         b->Update(forces[b->index], dt);
-        //b->color = colors[b];
     }
 }
 void State::Render() {

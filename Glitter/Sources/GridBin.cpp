@@ -4,30 +4,21 @@
 
 // Grid class
 Grid::Grid(glm::vec2 bounds_x, glm::vec2 bounds_y): bounds_x(bounds_x),
-    bounds_y(bounds_y),
-    num_boids(0) {
+    bounds_y(bounds_y) {
+    boids = new std::vector<Boid *>;
 }
 
 Grid::~Grid() {
-
+    delete boids;
 }
 
-int num_boids;
-Boid *boids[NODE_CAPACITY];
-
 bool Grid::insert(Boid *b) {
-    if (b->position.x < bounds_x.x || b->position.x >= bounds_x.y || 
-        b->position.y < bounds_y.x || b->position.y >= bounds_y.y) {
+    if (b->position.x < bounds_x.x || b->position.x > bounds_x.y || 
+        b->position.y < bounds_y.x || b->position.y > bounds_y.y) {
             return false;
     }
-
-    if (num_boids < NODE_CAPACITY) {
-        boids[num_boids] = b;
-        num_boids += 1;
-        return true;
-    }
-
-    return false;
+    boids->push_back(b);
+    return true;
 }
 
 /**
@@ -55,26 +46,21 @@ void Grid::query(Boid *b, std::function<void(Boid *)> &iterate_function) {
     if (!circleInRect(b->position, bounds_x, bounds_y)) {
         return;
     }
-    for (int i = 0; i < num_boids; i++) {
-        iterate_function(boids[i]);
+    for (int i = 0; i < boids->size(); i++) {
+        iterate_function((*boids)[i]);
     }
     return;
 }
 
 void Grid::clear() {
-    num_boids = 0;
+    boids->clear();
 }
-
-// void Grid::visualize();
-
-
 
 // GridBin class
 GridBin::GridBin() {
     // make grid 
-    // Grid *grids[gridDim_M][gridDim_N];
-    float grid_x = SCREEN_WIDTH / gridDim_M;
-    float grid_y = SCREEN_HEIGHT / gridDim_N;
+    float grid_x = ((float)SCREEN_WIDTH) / gridDim_M;
+    float grid_y = ((float)SCREEN_HEIGHT) / gridDim_N;
     for (int i = 0; i < gridDim_M; i++) {
         for (int j = 0; j < gridDim_N; j++) {
             // set bounds of each grid
@@ -96,34 +82,30 @@ GridBin::~GridBin() {
 
 }
 
-Grid GridBin::which_grid(Boid *b) {
-    // search function can be more efficient 
-    float grid_x = SCREEN_WIDTH / gridDim_M;
-    float grid_y = SCREEN_HEIGHT / gridDim_N;
-    for (int i = 0; i < gridDim_M; i++) {
-        for (int j = 0; j < gridDim_N; j++) {
-            if (b->position.x >= grids[i][j]->bounds_x.x && b->position.x < grids[i][j]->bounds_x.y
-             && b->position.y >= grids[i][j]->bounds_y.x && b->position.y < grids[i][j]->bounds_y.y) {
-                 return *grids[i][j];
-             }
-        }
-    }
+Grid *GridBin::which_grid(Boid *b) {
+    float percent_x = b->position.x / SCREEN_WIDTH;
+    float percent_y = b->position.y / SCREEN_HEIGHT;
+    int x_grid = gridDim_M * percent_x;
+    int y_grid = gridDim_N * percent_y;
+    return grids[x_grid][y_grid];
 }
 
 bool GridBin::insert(Boid *b) {
     // find grid to insert boid in
-    Grid grid_idx = which_grid(b);
-    return grid_idx.insert(b);
+    Grid *grid_idx = which_grid(b);
+    grid_idx->insert(b);
+    return true;
 }
 
 
 void GridBin::query(Boid *b, std::function<void(Boid *)> &iterate_function) {
     // find grid query
-    Grid grid_idx = which_grid(b);
-    grid_idx.query(b, iterate_function);
+    for (int i = 0; i < gridDim_M; i++) {
+        for (int j = 0; j < gridDim_N; j++) {
+            grids[i][j]->query(b, iterate_function);
+        }
+    }
 }
-
-// void GridBin::visualize();
 
 void GridBin::clear() {
     for (int i = 0; i < gridDim_M; i++) {
