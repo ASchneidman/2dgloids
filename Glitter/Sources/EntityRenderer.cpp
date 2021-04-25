@@ -72,9 +72,7 @@ void EntityRenderer::initRenderData() {
 
     glBindVertexArray(0);
 }
-
 void EntityRenderer::DrawBoids(std::vector<Boid *> &boids) {
-
     this->shader.Use();
 
     

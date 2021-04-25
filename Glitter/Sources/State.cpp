@@ -7,7 +7,11 @@
 #include <random>
 #include <map>
 #include <iterator>
+
 #include <iostream>
+#include <sstream>
+#include <fstream>
+
 #include <omp.h>
 #include <glm/gtx/color_space.hpp>
 #include <GLFW/glfw3.h>
@@ -52,6 +56,18 @@ void State::Init() {
         glm::vec2 initialVel = initVel * randSpeed(generator);
         this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height, i));
     }
+
+
+
+    // CODE TO LOAD AND COMPILE THE FORCE SHADER
+    std::string forceShaderCode;
+    std::ifstream forceShaderFile("Glitter/Shaders/boid_force.vert");
+    std::stringstream forceShaderStream;
+    
+    forceShaderStream << forceShaderFile.rdbuf();
+
+    forceShaderFile.close();
+
 }
 
 
