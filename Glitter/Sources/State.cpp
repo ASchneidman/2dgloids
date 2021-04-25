@@ -4,7 +4,6 @@
 
 #include "State.h"
 #include "resourcemanager.h"
-#include "QuadTree.hpp"
 #include <random>
 #include <map>
 #include <iterator>
@@ -53,33 +52,13 @@ void State::Init() {
         glm::vec2 initialVel = initVel * randSpeed(generator);
         this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height, i));
     }
-
-    qt = new QuadTreeHead(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height));
 }
 
 
 void State::Update(GLfloat dt) {
-    float s,e;
     glm::vec2 forces[NUM_BOIDS];
 
-    if (do_update % update_frames == 0) {
-        s = glfwGetTime();
-        qt->clear();
-        e = glfwGetTime();
-        //printf("clear time: %.3f\n", e-s);
-        s = glfwGetTime();
-        #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
-        for (size_t i = 0; i < boids.size(); i++) {
-            Boid *b = boids[i];
-            qt->insert(b);
-        }
-        e = glfwGetTime();
-        //printf("insert time: %.3f\n", e-s);
-        do_update = 0;
-    }
-    do_update += 1;
-
-    #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
+    #pragma omp parallel for
     for (size_t i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         glm::vec2 forceCollision(0.0f, 0.0f);
@@ -92,29 +71,7 @@ void State::Update(GLfloat dt) {
         glm::vec2 flockHeading(0.0, 0.0);
         int numClose = 0;
 
-        std::vector<Boid *> found_boids;
-
-        /*
-        std::function<void(Boid*)> lambda = [&](Boid *other) {
-            if (other->index == b->index) {
-                return;
-            }
-            // Collision avoidance
-            float dist = glm::distance(other->position, b->position);
-            if (dist < nearby_dist) {
-                flockCenter += other->position;
-                flockHeading += other->velocity;
-                numClose += 1;
-                float scaling = (1.0f / (dist * dist));
-                glm::vec2 dir = glm::normalize(b->position - other->position);
-                forceCollision += dir * scaling;
-            }
-        };
-        */
-
-        //qt->query(b, lambda);
-        qt->query(b, found_boids);
-        for (Boid *other : found_boids) {
+        for (Boid *other : boids) {
             if (other->index == b->index) {
                 continue;
             }
@@ -150,17 +107,13 @@ void State::Update(GLfloat dt) {
 
         }
 
-        //float theta = randDir(generator);
-        //forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
-        //force += forceRand;
-
         glm::vec2 forceGravity(0.0f, 1000.0f);
         force += forceGravity * gravity_weight;
 
         forces[b->index] = force;
     }
 
-    #pragma omp parallel for schedule(static) num_threads(THREADS)
+    #pragma omp parallel for
     for (size_t i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         b->Update(forces[b->index], dt);
@@ -169,9 +122,6 @@ void State::Update(GLfloat dt) {
 }
 void State::Render() {
     Renderer->DrawBoids(boids);
-    if (qt && VISUALIZE) {
-        qt->visualize();
-    }
 }
 
 State::~State() {
