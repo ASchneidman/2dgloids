@@ -28,12 +28,14 @@ private:
     GLuint force_x_buffer;
     GLuint force_y_buffer;
 
+
     GLuint vao;
 
-    GLuint UBO;
+    //GLuint UBO;
+    GLuint tbo;
+    GLuint texture_buffer;
 
-    GLfloat *positions;
-    GLfloat *velocities;
+    GLfloat *position_velocity;
     GLfloat *forces_x;
     GLfloat *forces_y;
 };

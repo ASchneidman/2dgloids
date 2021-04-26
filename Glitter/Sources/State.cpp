@@ -91,18 +91,17 @@ void State::Init() {
     glGenBuffers(1, &force_x_buffer);
     glGenBuffers(1, &force_y_buffer);
 
-    // Set the binding stuff for the global arrays
-    GLuint buffer_index = glGetUniformBlockIndex(forceProgram, "GlobalArrays");   
-    glUniformBlockBinding(forceProgram, buffer_index, 2);
+    // Create the texture buffer
+    glGenBuffers(1, &tbo);
+    glBindBuffer(GL_TEXTURE_BUFFER, tbo);
+    glBufferData(GL_TEXTURE_BUFFER, sizeof(GLfloat) * 4 * NUM_BOIDS, NULL, GL_STATIC_DRAW);
 
-    glGenBuffers(1, &UBO);
-
-    // Allocate storage for ubo
-    glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-    // Size four since we have both position and velocity
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(GLfloat) * NUM_BOIDS * 8, NULL, GL_STATIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    glBindBufferRange(GL_UNIFORM_BUFFER, 2, UBO, 0, sizeof(GLfloat) * NUM_BOIDS * 8);
+    // Generate texture and associate it with the tbo
+    glGenTextures(1, &texture_buffer);
+    glBindTexture(GL_TEXTURE_BUFFER, texture_buffer);
+    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tbo);
+    glBindTexture(GL_TEXTURE_BUFFER, 0);
+    glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
 
     // Bind them
@@ -112,8 +111,7 @@ void State::Init() {
     glBindVertexArray(0);
 
 
-    positions = new GLfloat[4 * NUM_BOIDS];
-    velocities = new GLfloat[4 * NUM_BOIDS];
+    position_velocity = new GLfloat[4 * NUM_BOIDS];
     forces_x = new GLfloat[NUM_BOIDS];
     forces_y = new GLfloat[NUM_BOIDS];
 }
@@ -126,10 +124,10 @@ void State::Update(GLfloat dt) {
     #pragma omp parallel for schedule(static) 
     for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
-        positions[4*i] = b->position.x;
-        positions[4*i+1] = b->position.y;
-        velocities[4*i] = b->velocity.x;
-        velocities[4*i+1] = b->velocity.y;
+        position_velocity[4*i] = b->position.x;
+        position_velocity[4*i+1] = b->position.y;
+        position_velocity[4*i+2] = b->velocity.x;
+        position_velocity[4*i+3] = b->velocity.y;
     }
 
 
@@ -146,10 +144,16 @@ void State::Update(GLfloat dt) {
     glUniform1f(glGetUniformLocation(forceProgram, "align_weight"), align_weight);
     glUniform1f(glGetUniformLocation(forceProgram, "position_weight"), position_weight);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, 4 * sizeof(GLfloat) * NUM_BOIDS, positions);
-    glBufferSubData(GL_UNIFORM_BUFFER, 4 * sizeof(GLfloat) * NUM_BOIDS, 4 * sizeof(GLfloat) * NUM_BOIDS, velocities);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    // bind texture
+    glBindBuffer(GL_TEXTURE_BUFFER, tbo);
+    // Send data
+    glBufferData(GL_TEXTURE_BUFFER, sizeof(GLfloat) * 4 * NUM_BOIDS, position_velocity, GL_STATIC_DRAW);
+    // activate texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_BUFFER, texture_buffer);
+
+
 
     // Allocate space for the results x
     glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);

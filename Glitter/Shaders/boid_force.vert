@@ -2,10 +2,7 @@
 out float force_x;
 out float force_y;
 
-layout (std140) uniform GlobalArrays {
-    vec2 positions[NUM_BOIDS];
-    vec2 velocities[NUM_BOIDS];
-};
+uniform samplerBuffer position_velocity;
 
 uniform float nearby_dist;
 uniform float max_velocity;
@@ -42,16 +39,22 @@ void main() {
 
     int numClose = 0;
 
-    vec2 my_position = positions[gl_VertexID];
-    vec2 my_velocity = velocities[gl_VertexID];
+    //vec2 my_position = positions[gl_VertexID];
+    //vec2 my_velocity = velocities[gl_VertexID];
+    vec4 p_v = texelFetch(position_velocity, gl_VertexID);
+    vec2 my_position = p_v.xy;
+    vec2 my_velocity = p_v.zw;
     
 
     for (int i = 0; i < NUM_BOIDS; i++) {
         if (i == gl_VertexID) {
             continue;
         }
-        vec2 other_position = positions[i];
-        vec2 other_velocity = velocities[i];
+
+        vec4 other_p_v = texelFetch(position_velocity, i);
+        vec2 other_position = other_p_v.xy;
+        vec2 other_velocity = other_p_v.zw;
+
         float dist = distance(other_position, my_position);
         if (dist < nearby_dist) {
             flockCenter += other_position;
