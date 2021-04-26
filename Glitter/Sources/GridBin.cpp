@@ -1,5 +1,6 @@
 #include "GridBin.hpp"
 #include <iostream>
+#include <omp.h>
 
 
 // Grid class
@@ -108,6 +109,7 @@ void GridBin::query(Boid *b, std::function<void(Boid *)> &iterate_function) {
 }
 
 void GridBin::clear() {
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < gridDim_M; i++) {
         for (int j = 0; j < gridDim_N; j++) {
             grids[i][j]->clear();

@@ -58,13 +58,12 @@ int main(int argc, char * argv[]) {
     float startTime = glfwGetTime();
     // Rendering Loop
     int i = 0;
-    while (glfwWindowShouldClose(mWindow) == false) {
+    while (glfwWindowShouldClose(mWindow) == false && i < 120) {
         // calculate delta time
         // --------------------
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        averageFrameTime += deltaTime;
 
         if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(mWindow, true);
@@ -84,8 +83,7 @@ int main(int argc, char * argv[]) {
         update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
         collision_weight, align_weight, position_weight);
 
-        //printf("Update time: %.3f\n", update_end - update_start);
-        //printf("Render time: %.3f\n\n", render_end - render_start);
+        averageFrameTime += (update_end - update_start);
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
@@ -93,6 +91,9 @@ int main(int argc, char * argv[]) {
         i += 1;
     }   
     std::cout << std::endl;
+
+    printf("Average frame time: %.3f\n", averageFrameTime / i);
+
     glfwTerminate();
 
     return EXIT_SUCCESS;
