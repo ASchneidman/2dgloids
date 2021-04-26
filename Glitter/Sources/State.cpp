@@ -87,10 +87,23 @@ void State::Init() {
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-
     // Generate the buffers
     glGenBuffers(1, &force_x_buffer);
     glGenBuffers(1, &force_y_buffer);
+
+    // Set the binding stuff for the global arrays
+    GLuint buffer_index = glGetUniformBlockIndex(forceProgram, "GlobalArrays");   
+    glUniformBlockBinding(forceProgram, buffer_index, 2);
+
+    glGenBuffers(1, &UBO);
+
+    // Allocate storage for ubo
+    glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+    // Size four since we have both position and velocity
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(GLfloat) * NUM_BOIDS * 8, NULL, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferRange(GL_UNIFORM_BUFFER, 2, UBO, 0, sizeof(GLfloat) * NUM_BOIDS * 8);
+
 
     // Bind them
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, force_x_buffer);
@@ -98,8 +111,9 @@ void State::Init() {
 
     glBindVertexArray(0);
 
-    positions = new GLfloat[2 * NUM_BOIDS];
-    velocities = new GLfloat[2 * NUM_BOIDS];
+
+    positions = new GLfloat[4 * NUM_BOIDS];
+    velocities = new GLfloat[4 * NUM_BOIDS];
     forces_x = new GLfloat[NUM_BOIDS];
     forces_y = new GLfloat[NUM_BOIDS];
 }
@@ -112,10 +126,10 @@ void State::Update(GLfloat dt) {
     #pragma omp parallel for schedule(static) 
     for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
-        positions[2*i] = b->position.x;
-        positions[2*i+1] = b->position.y;
-        velocities[2*i] = b->velocity.x;
-        velocities[2*i+1] = b->velocity.y;
+        positions[4*i] = b->position.x;
+        positions[4*i+1] = b->position.y;
+        velocities[4*i] = b->velocity.x;
+        velocities[4*i+1] = b->velocity.y;
     }
 
 
@@ -123,12 +137,19 @@ void State::Update(GLfloat dt) {
 
     glBindVertexArray(vao);
 
-    glUniform2fv(glGetUniformLocation(forceProgram, "positions"), NUM_BOIDS, positions);
-    glUniform2fv(glGetUniformLocation(forceProgram, "velocities"), NUM_BOIDS, velocities);
+
     glUniform1f(glGetUniformLocation(forceProgram, "nearby_dist"), nearby_dist);
     glUniform1f(glGetUniformLocation(forceProgram, "max_velocity"), max_velocity);
     glUniform1f(glGetUniformLocation(forceProgram, "max_force"), (float)MAX_FORCE);
 
+    glUniform1f(glGetUniformLocation(forceProgram, "collision_weight"), collision_weight);
+    glUniform1f(glGetUniformLocation(forceProgram, "align_weight"), align_weight);
+    glUniform1f(glGetUniformLocation(forceProgram, "position_weight"), position_weight);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, 4 * sizeof(GLfloat) * NUM_BOIDS, positions);
+    glBufferSubData(GL_UNIFORM_BUFFER, 4 * sizeof(GLfloat) * NUM_BOIDS, 4 * sizeof(GLfloat) * NUM_BOIDS, velocities);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     // Allocate space for the results x
     glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);

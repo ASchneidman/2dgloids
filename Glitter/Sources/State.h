@@ -30,6 +30,8 @@ private:
 
     GLuint vao;
 
+    GLuint UBO;
+
     GLfloat *positions;
     GLfloat *velocities;
     GLfloat *forces_x;

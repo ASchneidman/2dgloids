@@ -2,12 +2,18 @@
 out float force_x;
 out float force_y;
 
-uniform vec2 positions[NUM_BOIDS];
-uniform vec2 velocities[NUM_BOIDS];
+layout (std140) uniform GlobalArrays {
+    vec2 positions[NUM_BOIDS];
+    vec2 velocities[NUM_BOIDS];
+};
 
 uniform float nearby_dist;
 uniform float max_velocity;
 uniform float max_force;
+
+uniform float collision_weight;
+uniform float align_weight;
+uniform float position_weight;
 
 
 vec2 clamp_magnitude(vec2 vec, float max_value) {
@@ -66,10 +72,13 @@ void main() {
         forcePos = (flockCenter - my_position);
 
         forceCollision = SteerToward(forceCollision, my_velocity);
+        forceCollision *= collision_weight;
 
         forceAlign = SteerToward(forceAlign, my_velocity);
+        forceAlign *= align_weight;
 
         forcePos = SteerToward(forcePos, my_velocity);
+        forcePos *= position_weight;
 
         force = forceCollision + forceAlign + forcePos;
     }

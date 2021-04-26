@@ -16,7 +16,8 @@
 
 // Boid related constants
 
-#define NUM_BOIDS 504
+#define NUM_BOIDS 2000
+
 #define BOID_SPEED 100.0f
 
 #define MAX_VEL 1800.0f
