@@ -58,7 +58,7 @@ void State::Init() {
 void State::Update(GLfloat dt) {
     glm::vec2 forces[NUM_BOIDS];
 
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         glm::vec2 forceCollision(0.0f, 0.0f);
@@ -113,7 +113,7 @@ void State::Update(GLfloat dt) {
         forces[b->index] = force;
     }
 
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         b->Update(forces[b->index], dt);
