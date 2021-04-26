@@ -26,10 +26,12 @@
 #define ALIGN_WEIGHT (1.f)
 #define POSITION_WEIGHT (1.f)
 
-#define NEARBY_DIST 64.0f
+#define NEARBY_DIST 30.0f
 
 #define ER_DEFAULT_SIZE 1.0f
 #define ER_DEFAULT_ROT 0.0f
+
+#define NUM_THREADS 8
 
 // The Width of the screen
 const unsigned int SCREEN_WIDTH = 1700;

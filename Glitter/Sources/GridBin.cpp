@@ -109,7 +109,7 @@ void GridBin::query(Boid *b, std::function<void(Boid *)> &iterate_function) {
 }
 
 void GridBin::clear() {
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for collapse(2) num_threads(NUM_THREADS)
     for (int i = 0; i < gridDim_M; i++) {
         for (int j = 0; j < gridDim_N; j++) {
             grids[i][j]->clear();

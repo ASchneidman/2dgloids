@@ -92,7 +92,7 @@ int main(int argc, char * argv[]) {
     }   
     std::cout << std::endl;
 
-    printf("Average frame time: %.3f\n", averageFrameTime / i);
+    printf("Average update time: %.3f\n", averageFrameTime / i);
 
     glfwTerminate();
 

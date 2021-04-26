@@ -62,7 +62,7 @@ void State::Update(GLfloat dt) {
     for (Boid *b : boids) {
         grid->insert(b);
     }
-    #pragma omp parallel for schedule(dynamic)
+    #pragma omp parallel for schedule(dynamic) num_threads(NUM_THREADS)
     for (size_t j = 0; j < this->boids.size(); j++) {
         Boid *b = boids[j];
 
