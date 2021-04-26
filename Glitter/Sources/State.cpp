@@ -16,7 +16,7 @@
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
 
 int do_update = 0;
-int update_frames = 1;
+int update_frames = 10;
 
 std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
 
@@ -59,22 +59,15 @@ void State::Init() {
 
 
 void State::Update(GLfloat dt) {
-    float s,e;
     glm::vec2 forces[NUM_BOIDS];
 
     if (do_update % update_frames == 0) {
-        s = glfwGetTime();
         qt->clear();
-        e = glfwGetTime();
-        //printf("clear time: %.3f\n", e-s);
-        s = glfwGetTime();
         #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
         for (size_t i = 0; i < boids.size(); i++) {
             Boid *b = boids[i];
             qt->insert(b);
         }
-        e = glfwGetTime();
-        //printf("insert time: %.3f\n", e-s);
         do_update = 0;
     }
     do_update += 1;
@@ -93,26 +86,6 @@ void State::Update(GLfloat dt) {
         int numClose = 0;
 
         std::vector<Boid *> found_boids;
-
-        /*
-        std::function<void(Boid*)> lambda = [&](Boid *other) {
-            if (other->index == b->index) {
-                return;
-            }
-            // Collision avoidance
-            float dist = glm::distance(other->position, b->position);
-            if (dist < nearby_dist) {
-                flockCenter += other->position;
-                flockHeading += other->velocity;
-                numClose += 1;
-                float scaling = (1.0f / (dist * dist));
-                glm::vec2 dir = glm::normalize(b->position - other->position);
-                forceCollision += dir * scaling;
-            }
-        };
-        */
-
-        //qt->query(b, lambda);
         qt->query(b, found_boids);
         for (Boid *other : found_boids) {
             if (other->index == b->index) {
@@ -150,9 +123,6 @@ void State::Update(GLfloat dt) {
 
         }
 
-        //float theta = randDir(generator);
-        //forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
-        //force += forceRand;
 
         glm::vec2 forceGravity(0.0f, 1000.0f);
         force += forceGravity * gravity_weight;
