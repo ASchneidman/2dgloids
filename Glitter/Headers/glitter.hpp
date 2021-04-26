@@ -16,7 +16,7 @@
 
 // Boid related constants
 
-#define NUM_BOIDS 10000
+#define NUM_BOIDS 100000
 
 #define BOID_SPEED 100.0f
 
@@ -30,7 +30,7 @@
 
 #define NEARBY_DIST 30.0f
 
-#define ER_DEFAULT_SIZE 5.0f
+#define ER_DEFAULT_SIZE 1.0f
 #define ER_DEFAULT_ROT 0.0f
 
 #define VISUALIZE (false)

@@ -56,14 +56,15 @@ void main() {
         vec2 other_velocity = other_p_v.zw;
 
         float dist = distance(other_position, my_position);
+        float is_near = float(dist < nearby_dist);
         if (dist < nearby_dist) {
-            flockCenter += other_position;
-            flockHeading += other_velocity;
-            numClose += 1;
+            flockCenter += other_position * is_near;
+            flockHeading += other_velocity * is_near;
+            numClose += int(dist < nearby_dist);
             // extra dist is so dir is normalized
             float scaling = (1.0f / (dist * dist));
             vec2 dir = normalize(my_position - other_position);
-            forceCollision += dir * scaling;
+            forceCollision += dir * scaling * is_near;
         }
     }
 

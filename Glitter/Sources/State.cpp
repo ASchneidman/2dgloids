@@ -89,7 +89,13 @@ void State::Init() {
 
     // Generate the buffers
     glGenBuffers(1, &force_x_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);
+    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
+
     glGenBuffers(1, &force_y_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, force_y_buffer);
+    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
+
 
     // Create the texture buffer
     glGenBuffers(1, &tbo);
@@ -100,7 +106,7 @@ void State::Init() {
     glGenTextures(1, &texture_buffer);
     glBindTexture(GL_TEXTURE_BUFFER, texture_buffer);
     glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tbo);
-    glBindTexture(GL_TEXTURE_BUFFER, 0);
+    glActiveTexture(GL_TEXTURE0);
     glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
 
@@ -130,9 +136,6 @@ void State::Update(GLfloat dt) {
         position_velocity[4*i+3] = b->velocity.y;
     }
 
-
-
-
     glBindVertexArray(vao);
 
 
@@ -145,26 +148,12 @@ void State::Update(GLfloat dt) {
     glUniform1f(glGetUniformLocation(forceProgram, "position_weight"), position_weight);
 
 
+
     // bind texture
     glBindBuffer(GL_TEXTURE_BUFFER, tbo);
     // Send data
-    glBufferData(GL_TEXTURE_BUFFER, sizeof(GLfloat) * 4 * NUM_BOIDS, position_velocity, GL_STATIC_DRAW);
-    // activate texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_BUFFER, texture_buffer);
+    glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(GLfloat) * 4 * NUM_BOIDS, position_velocity);
 
-
-
-    // Allocate space for the results x
-    glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);
-    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
-    // Allocate space for the results y
-    glBindBuffer(GL_ARRAY_BUFFER, force_y_buffer);
-    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
-
-    // Tell opengl where to read/write the data
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, force_x_buffer);
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, force_y_buffer);
 
 
     // Actually perform the computation
@@ -186,6 +175,7 @@ void State::Update(GLfloat dt) {
 
     glBindVertexArray(0);
 
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         b->Update(glm::vec2(forces_x[i], forces_y[i]), dt);
