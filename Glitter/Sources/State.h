@@ -31,7 +31,6 @@ private:
 
     GLuint vao;
 
-    //GLuint UBO;
     GLuint tbo;
     GLuint texture_buffer;
 
