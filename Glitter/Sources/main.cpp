@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <unistd.h>
 
 float max_velocity = MAX_VEL;
 float nearby_dist = NEARBY_DIST;
@@ -64,7 +65,6 @@ int main(int argc, char * argv[]) {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        averageFrameTime += deltaTime;
 
         if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(mWindow, true);
