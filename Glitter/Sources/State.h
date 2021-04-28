@@ -34,9 +34,13 @@ private:
     GLuint tbo;
     GLuint texture_buffer;
 
-    GLfloat *position_velocity;
+    //GLfloat *position_velocity;
+    std::vector<GLfloat> position_velocity;
     GLfloat *forces_x;
     GLfloat *forces_y;
+
+    //std::vector<int> grid[N_ROWS * N_COLS];
+    std::vector<int> *grid[N_ROWS][N_COLS];
 };
 
 

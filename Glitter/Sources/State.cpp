@@ -63,7 +63,7 @@ void State::Init() {
     std::ifstream forceShaderFile("Glitter/boid_force.vert");
 
     std::stringstream forceShaderStream;
-    forceShaderStream << "#version 330 core\n#define NUM_BOIDS " << NUM_BOIDS << "\n" << forceShaderFile.rdbuf();
+    forceShaderStream << "#version 330 core\n#define NUM_BOIDS " << NUM_BOIDS << "\n" << "#define screen_width " << SCREEN_WIDTH << "\n" << "#define screen_height " << SCREEN_HEIGHT << "\n" <<  forceShaderFile.rdbuf();
 
     forceShaderFile.close();
 
@@ -100,7 +100,7 @@ void State::Init() {
     // Create the texture buffer
     glGenBuffers(1, &tbo);
     glBindBuffer(GL_TEXTURE_BUFFER, tbo);
-    glBufferData(GL_TEXTURE_BUFFER, sizeof(GLfloat) * 4 * NUM_BOIDS, NULL, GL_STATIC_DRAW);
+
 
     // Generate texture and associate it with the tbo
     glGenTextures(1, &texture_buffer);
@@ -117,27 +117,84 @@ void State::Init() {
     glBindVertexArray(0);
 
 
-    position_velocity = new GLfloat[4 * NUM_BOIDS];
+    //position_velocity = new GLfloat[4 * NUM_BOIDS];
     forces_x = new GLfloat[NUM_BOIDS];
     forces_y = new GLfloat[NUM_BOIDS];
+
+    //grid = new std::vector<int>[N_ROWS * N_COLS];
+    for (int r = 0; r < N_ROWS; r++) {
+        for (int c = 0; c < N_COLS; c++) {
+            grid[r][c] = new std::vector<int>();
+        }
+    }
 }
 
 
 
 void State::Update(GLfloat dt) {
-    glUseProgram(forceProgram);
-
-    #pragma omp parallel for schedule(static) 
-    for (int i = 0; i < boids.size(); i++) {
-        Boid *b = boids[i];
-        position_velocity[4*i] = b->position.x;
-        position_velocity[4*i+1] = b->position.y;
-        position_velocity[4*i+2] = b->velocity.x;
-        position_velocity[4*i+3] = b->velocity.y;
+    position_velocity.clear();
+    // clear grid
+    for (int r = 0; r < N_ROWS; r++) {
+        for (int c = 0; c < N_COLS; c++) {
+            grid[r][c]->clear();
+        }
     }
 
+
+    // Build grid
+    for (int i = 0; i < boids.size(); i++) {
+        Boid *b = boids[i];
+        float percent_x = b->position.x / SCREEN_WIDTH;
+        float percent_y = b->position.y / SCREEN_HEIGHT;
+        
+        int r = percent_x * N_ROWS;
+        int c = percent_y * N_COLS;
+
+        //grid[N_COLS * r + c].push_back(i);
+        grid[r][c]->push_back(i);
+    }
+
+
+    // Pack all the data into a texture
+    // Populate grid part
+    for (int r = 0; r < N_ROWS; r++) {
+        for (int c = 0; c < N_COLS; c++) {
+            std::vector<int> *cell = grid[r][c];
+            int n_boids = cell->size();
+            position_velocity.push_back(n_boids);
+
+
+            // pad the vec4
+            position_velocity.insert(position_velocity.end(), 3, 0);
+
+            // insert all the boids
+            for (int i = 0; i < n_boids; i++) {
+                position_velocity.push_back((*cell)[i]);
+            }
+
+
+            // round up to next multiple of 4
+            if (position_velocity.size() % 4 != 0) {
+                position_velocity.insert(position_velocity.end(), 4 - (position_velocity.size() % 4), 0);
+            }
+        }
+    }
+
+    int offset = position_velocity.size();
+    assert(position_velocity.size() % 4 == 0);
+
+    for (int i = 0; i < boids.size(); i++) {
+        Boid *b = boids[i];
+        position_velocity.push_back(b->position.x);
+        position_velocity.push_back(b->position.y);
+        position_velocity.push_back(b->velocity.x);
+        position_velocity.push_back(b->velocity.y);
+    }
+
+    glUseProgram(forceProgram);
     glBindVertexArray(vao);
 
+    glUniform1i(glGetUniformLocation(forceProgram, "position_velocity_offset"), offset / 4);
 
     glUniform1f(glGetUniformLocation(forceProgram, "nearby_dist"), nearby_dist);
     glUniform1f(glGetUniformLocation(forceProgram, "max_velocity"), max_velocity);
@@ -147,13 +204,17 @@ void State::Update(GLfloat dt) {
     glUniform1f(glGetUniformLocation(forceProgram, "align_weight"), align_weight);
     glUniform1f(glGetUniformLocation(forceProgram, "position_weight"), position_weight);
 
+    glUniform1i(glGetUniformLocation(forceProgram, "n_rows"), N_ROWS);
+    glUniform1i(glGetUniformLocation(forceProgram, "n_cols"), N_COLS);
+
+
 
 
     // bind texture
     glBindBuffer(GL_TEXTURE_BUFFER, tbo);
     // Send data
-    glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(GLfloat) * 4 * NUM_BOIDS, position_velocity);
-
+    glBufferData(GL_TEXTURE_BUFFER, position_velocity.size() * sizeof(GLfloat), position_velocity.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
 
     // Actually perform the computation
@@ -175,11 +236,13 @@ void State::Update(GLfloat dt) {
 
     glBindVertexArray(0);
 
-    #pragma omp parallel for schedule(static)
     for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         b->Update(glm::vec2(forces_x[i], forces_y[i]), dt);
     }
+
+
+
 }
 void State::Render() {
     Renderer->DrawBoids(boids);

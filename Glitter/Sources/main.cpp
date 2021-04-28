@@ -55,6 +55,7 @@ int main(int argc, char * argv[]) {
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
 
+
     float averageFrameTime = 0.0f;
     // Rendering Loop
     int i = 0;
