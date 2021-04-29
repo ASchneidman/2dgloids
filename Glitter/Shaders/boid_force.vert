@@ -77,6 +77,7 @@ void main() {
 
         vec2 x_range = vec2(grid_width * r, grid_width * (r+1));
         vec2 y_range = vec2(grid_height * c, grid_height * (c+1));
+
         // check if my circle intersects this bbox
         if (circleInRect(my_position, x_range, y_range) == 0) {
             // don't intersect, so skip to the next grid cell tex index
@@ -84,6 +85,7 @@ void main() {
             tex_index += n_boids;
             continue;
         }
+        
         
         // Circle does intersect, so iterate through boids
         for (int b = 0; b < n_boids; b++) {
@@ -99,15 +101,15 @@ void main() {
 
             float dist = distance(other_position, my_position);
             float is_near = float(dist < nearby_dist);
-            if (dist < nearby_dist) {
-                flockCenter += other_position * is_near;
-                flockHeading += other_velocity * is_near;
-                numClose += int(dist < nearby_dist);
-                // extra dist is so dir is normalized
-                float scaling = (1.0f / (dist * dist));
-                vec2 dir = normalize(my_position - other_position);
-                forceCollision += dir * scaling * is_near;
-            }
+
+            flockCenter += other_position * is_near;
+            flockHeading += other_velocity * is_near;
+            numClose += int(dist < nearby_dist);
+            // extra dist is so dir is normalized
+            float scaling = (1.0f / (dist * dist));
+            vec2 dir = normalize(my_position - other_position);
+            forceCollision += dir * scaling * is_near;
+
             tex_index += 1;
         }
     }

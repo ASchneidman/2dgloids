@@ -32,7 +32,7 @@ private:
     GLuint tbo;
     GLuint texture_buffer;
     GLuint inputs_buffer;
-
+    
 
     std::vector<GLfloat> position_velocity;
     GLfloat *forces;
