@@ -35,7 +35,7 @@
 
 #define VISUALIZE (false)
 
-#define N_ROWS 20
+#define N_ROWS 100
 #define N_COLS 10
 
 #define RENDER (false)
