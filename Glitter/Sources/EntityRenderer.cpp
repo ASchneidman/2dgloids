@@ -102,7 +102,9 @@ void EntityRenderer::DrawBoids(std::vector<Boid *> &boids) {
     glBindBuffer(GL_ARRAY_BUFFER, color_buffer);
     glBufferData(GL_ARRAY_BUFFER, boids.size() * sizeof(glm::vec3), &color_matrices[0], GL_STATIC_DRAW);
 
+    if (RENDER) {
     glDrawArraysInstanced(GL_TRIANGLES, 0, 3, boids.size());
+    }
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

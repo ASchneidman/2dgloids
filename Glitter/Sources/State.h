@@ -26,9 +26,9 @@ private:
     GLuint forceProgram;
 
     GLuint force_buffer;
-    //GLuint force_x_buffer;
-    //GLuint force_y_buffer;
 
+
+    GLuint UBO;
 
     GLuint vao;
 
@@ -38,12 +38,10 @@ private:
     //GLfloat *position_velocity;
     std::vector<GLfloat> position_velocity;
     GLfloat *forces;
-    //GLfloat *forces_x;
-    //GLfloat *forces_y;
+    GLint *grid_cell_sizes;
 
     //std::vector<int> grid[N_ROWS * N_COLS];
     std::vector<int> *grid[N_ROWS][N_COLS];
 };
-
 
 #endif //GLITTER_STATE_H

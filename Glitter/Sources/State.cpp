@@ -63,7 +63,12 @@ void State::Init() {
     std::ifstream forceShaderFile("Glitter/boid_force.vert");
 
     std::stringstream forceShaderStream;
-    forceShaderStream << "#version 330 core\n#define NUM_BOIDS " << NUM_BOIDS << "\n" << "#define screen_width " << SCREEN_WIDTH << "\n" << "#define screen_height " << SCREEN_HEIGHT << "\n" <<  forceShaderFile.rdbuf();
+    forceShaderStream << "#version 330 core\n#define NUM_BOIDS " << NUM_BOIDS << "\n" \
+                      << "#define screen_width " << SCREEN_WIDTH << "\n" \
+                      << "#define screen_height " << SCREEN_HEIGHT << "\n" \
+                      << "#define n_rows " << N_ROWS << "\n" \
+                      << "#define n_cols " << N_COLS << "\n" \
+                      <<  forceShaderFile.rdbuf();
 
     forceShaderFile.close();
 
@@ -81,7 +86,6 @@ void State::Init() {
 
     //const GLchar* feedbackNames[2] = {"force_x", "force_y"};
     const GLchar *feedbackNames[1] = {"total_force"};
-    //glTransformFeedbackVaryings(forceProgram, 2, feedbackNames, GL_SEPARATE_ATTRIBS);
     glTransformFeedbackVaryings(forceProgram , 1, feedbackNames, GL_INTERLEAVED_ATTRIBS);
     glLinkProgram(forceProgram);
 
@@ -94,15 +98,6 @@ void State::Init() {
     glGenBuffers(1, &force_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, force_buffer);
     glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat) * 2, nullptr, GL_STATIC_READ);
-    /*
-    glGenBuffers(1, &force_x_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);
-    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
-
-    glGenBuffers(1, &force_y_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, force_y_buffer);
-    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
-    */
 
 
     // Create the texture buffer
@@ -120,17 +115,34 @@ void State::Init() {
 
     // Bind them
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, force_buffer);
-    //glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, force_x_buffer);
-    //glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, force_y_buffer);
+
+
+
+
+    // Set the binding stuff for the UBO
+    GLuint buffer_index = glGetUniformBlockIndex(forceProgram, "sizes");   
+    glUniformBlockBinding(forceProgram, buffer_index, 1);
+
+    glGenBuffers(1, &UBO);
+
+    // Allocate storage for ubo
+    glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+    // Size four since we have both position and velocity
+    glBufferData(GL_UNIFORM_BUFFER, N_ROWS * N_COLS * sizeof(GLint), NULL, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferRange(GL_UNIFORM_BUFFER, 1, UBO, 0, N_ROWS * N_COLS * sizeof(GLint));
+
+
+
+
 
     glBindVertexArray(0);
 
 
     forces = new GLfloat[NUM_BOIDS * 2];
-    //forces_x = new GLfloat[NUM_BOIDS];
-    //forces_y = new GLfloat[NUM_BOIDS];
 
-    //grid = new std::vector<int>[N_ROWS * N_COLS];
+    grid_cell_sizes = new GLint[N_ROWS * N_COLS];
+
     for (int r = 0; r < N_ROWS; r++) {
         for (int c = 0; c < N_COLS; c++) {
             grid[r][c] = new std::vector<int>();
@@ -159,7 +171,6 @@ void State::Update(GLfloat dt) {
         int r = percent_x * N_ROWS;
         int c = percent_y * N_COLS;
 
-        //grid[N_COLS * r + c].push_back(i);
         grid[r][c]->push_back(i);
     }
 
@@ -170,16 +181,14 @@ void State::Update(GLfloat dt) {
         for (int c = 0; c < N_COLS; c++) {
             std::vector<int> *cell = grid[r][c];
             int n_boids = cell->size();
-            position_velocity.push_back(n_boids);
+            grid_cell_sizes[(r * N_COLS + c)] = n_boids;
 
-
-            // pad the vec4
-            position_velocity.insert(position_velocity.end(), 3, 0);
 
             // insert all the boids
             for (int i = 0; i < n_boids; i++) {
                 position_velocity.push_back((*cell)[i]);
             }
+
 
 
             // round up to next multiple of 4
@@ -213,10 +222,10 @@ void State::Update(GLfloat dt) {
     glUniform1f(glGetUniformLocation(forceProgram, "align_weight"), align_weight);
     glUniform1f(glGetUniformLocation(forceProgram, "position_weight"), position_weight);
 
-    glUniform1i(glGetUniformLocation(forceProgram, "n_rows"), N_ROWS);
-    glUniform1i(glGetUniformLocation(forceProgram, "n_cols"), N_COLS);
 
-
+    glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, N_ROWS * N_COLS * sizeof(GLint), grid_cell_sizes);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
     // bind texture
@@ -239,20 +248,12 @@ void State::Update(GLfloat dt) {
     // Bind buffer to read from
     glBindBuffer(GL_ARRAY_BUFFER, force_buffer);
     glGetBufferSubData(GL_ARRAY_BUFFER, 0, NUM_BOIDS * sizeof(GLfloat) * 2, forces);
-    /*
-    glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);
-    glGetBufferSubData(GL_ARRAY_BUFFER, 0, NUM_BOIDS * sizeof(GLfloat), forces_x);
-
-    glBindBuffer(GL_ARRAY_BUFFER, force_y_buffer);
-    glGetBufferSubData(GL_ARRAY_BUFFER, 0, NUM_BOIDS * sizeof(GLfloat), forces_y);
-    */
 
     glBindVertexArray(0);
 
     for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         b->Update(glm::vec2(forces[2*i], forces[2*i+1]), dt);
-        //b->Update(glm::vec2(forces_x[i], forces_y[i]), dt);
     }
 
 

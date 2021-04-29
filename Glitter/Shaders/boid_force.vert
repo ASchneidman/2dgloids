@@ -1,8 +1,12 @@
 
 out vec2 total_force;
-//out float force_y;
 
 uniform samplerBuffer position_velocity;
+
+// should be only around 400 bytes
+layout (packed) uniform sizes {
+    int grid_cell_sizes[n_rows * n_cols];
+};
 
 uniform float nearby_dist;
 uniform float max_velocity;
@@ -11,9 +15,6 @@ uniform float max_force;
 uniform float collision_weight;
 uniform float align_weight;
 uniform float position_weight;
-
-uniform int n_rows;
-uniform int n_cols;
 
 uniform int position_velocity_offset;
 
@@ -50,8 +51,6 @@ vec2 SteerToward(vec2 force, vec2 velocity) {
     return clamp_magnitude(normalize(force) * max_velocity - velocity, max_force); 
 }
 
-// WARNING: REMEMBER TO TEST A VALUE, YOU HAVE TO SET BOTH force_x AND force_y OR ELSE IT WONT WORK
-
 void main() {
     vec2 forceCollision = vec2(0.0, 0.0);
     vec2 forceAlign = vec2(0.0, 0.0);
@@ -68,7 +67,6 @@ void main() {
     // for each grid cell, have to store the number of boids in that cell and the sum 
     // of total boid indices will be NUM_BOIDS, however each texel stores 4 indices
 
-    //vec4 p_v = texelFetch(position_velocity, gl_VertexID + position_velocity_offset);
     vec4 p_v = texelFetch(position_velocity, gl_InstanceID + position_velocity_offset);
 
     vec2 my_position = p_v.xy;
@@ -79,18 +77,10 @@ void main() {
     float grid_width = screen_width / float(n_rows);
     float grid_height = screen_height / float(n_cols);
 
-
-    int total_boids = 0;
-
     for (int r = 0; r < n_rows; r++) {
     for (int c = 0; c < n_cols; c++) {
         // number of boids in this grid cell
-        int n_boids = int(texelFetch(position_velocity, tex_index).x);
-
-        total_boids += n_boids;
-
-
-        tex_index += 1;
+        int n_boids = grid_cell_sizes[r * n_cols + c];
 
         vec2 x_range = vec2(grid_width * r, grid_width * (r+1));
         vec2 y_range = vec2(grid_height * c, grid_height * (c+1));
@@ -119,7 +109,6 @@ void main() {
                     i = int(next_four_boids.w);
                 }
 
-                //if (i == gl_VertexID) {
                 if (i == gl_InstanceID) {
                     continue;
                 }
@@ -166,8 +155,6 @@ void main() {
         force = forceCollision + forceAlign + forcePos;
     }
 
-    //force_x = force.x;
-    //force_y = force.y;
     total_force = force;
 }
 
