@@ -74,7 +74,8 @@ int main(int argc, char * argv[]) {
         glClear(GL_COLOR_BUFFER_BIT);
 
         float update_start = glfwGetTime();
-        state.Update(deltaTime);
+        //state.Update(deltaTime);
+        state.Update(0.01);
         float update_end = glfwGetTime();
         float render_start = glfwGetTime();
         state.Render();
