@@ -32,11 +32,12 @@ private:
     GLuint tbo;
     GLuint texture_buffer;
     GLuint inputs_buffer;
-    
+
 
     std::vector<GLfloat> position_velocity;
     GLfloat *forces;
-    GLint *grid_cell_sizes;
+    //GLint *grid_cell_sizes;
+    std::vector<int> *grid_cell_sizes;
     
     GLfloat *inputs;
 

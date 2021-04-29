@@ -11,6 +11,9 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <numeric>
+#include <functional>
+#include <algorithm>
 
 #include <omp.h>
 #include <glm/gtx/color_space.hpp>
@@ -148,7 +151,8 @@ void State::Init() {
 
 
     forces = new GLfloat[NUM_BOIDS * 2];
-    grid_cell_sizes = new GLint[N_ROWS * N_COLS];
+    //grid_cell_sizes = new GLint[N_ROWS * N_COLS];
+    grid_cell_sizes = new std::vector<int>(N_ROWS * N_COLS, 0);
     inputs = new GLfloat[NUM_BOIDS * 4];
 
 
@@ -195,7 +199,7 @@ void State::Update(GLfloat dt) {
         for (int c = 0; c < N_COLS; c++) {
             std::vector<int> *cell = grid[r][c];
             int n_boids = cell->size();
-            grid_cell_sizes[(r * N_COLS + c)] = n_boids;
+            (*grid_cell_sizes)[r * N_COLS + c] = n_boids;
 
 
             // insert all the boids
@@ -207,36 +211,22 @@ void State::Update(GLfloat dt) {
                 position_velocity.push_back(b->velocity.x);
                 position_velocity.push_back(b->velocity.y);
             }
-
-
-
-            // round up to next multiple of 4
-            /*
-            if (position_velocity.size() % 4 != 0) {
-                position_velocity.insert(position_velocity.end(), 4 - (position_velocity.size() % 4), 0);
-            }
-            */
         }
     }
 
-    //int offset = position_velocity.size();
-    assert(position_velocity.size() % 4 == 0);
-
-    /*
-    for (int i = 0; i < boids.size(); i++) {
-        Boid *b = boids[i];
-        position_velocity.push_back(b->position.x);
-        position_velocity.push_back(b->position.y);
-        position_velocity.push_back(b->velocity.x);
-        position_velocity.push_back(b->velocity.y);
+    // Perform exclusive scan to get the start indices of each grid cell
+    int indices[N_ROWS * N_COLS];
+    indices[0] = 0;
+    for (int i = 1; i < grid_cell_sizes->size(); i++) {
+        indices[i] = indices[i-1] + (*grid_cell_sizes)[i-1];
     }
-    */
+
+    assert(position_velocity.size() % 4 == 0);
     
 
     glUseProgram(forceProgram);
     glBindVertexArray(vao);
 
-    //glUniform1i(glGetUniformLocation(forceProgram, "position_velocity_offset"), offset / 4);
 
     glUniform1f(glGetUniformLocation(forceProgram, "nearby_dist"), nearby_dist);
     glUniform1f(glGetUniformLocation(forceProgram, "max_velocity"), max_velocity);
@@ -254,7 +244,7 @@ void State::Update(GLfloat dt) {
 
     // Send over the grid cell sizes
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, N_ROWS * N_COLS * sizeof(GLint), grid_cell_sizes);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, N_ROWS * N_COLS * sizeof(GLint), indices);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 

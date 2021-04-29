@@ -66,25 +66,42 @@ void main() {
     vec2 my_velocity = p_v.zw;
 
     
-    int tex_index = 0;
+    //int tex_index = 0;
     float grid_width = screen_width / float(n_rows);
     float grid_height = screen_height / float(n_cols);
 
-    for (int r = 0; r < n_rows; r++) {
-    for (int c = 0; c < n_cols; c++) {
+    int minX = int(float(n_rows) * (max(0.0, my_position.x - nearby_dist) / screen_width));
+    int maxX = int(float(n_rows) * (min(screen_width, my_position.x + nearby_dist) / screen_width)) + 1;
+    int minY = int(float(n_cols) * (max(0.0, my_position.y - nearby_dist) / screen_height));
+    int maxY = int(float(n_cols) * (min(screen_height, my_position.y + nearby_dist) / screen_height)) + 1;
+
+    int tex_size = textureSize(position_velocity);
+
+    //for (int r = 0; r < n_rows; r++) {
+    //for (int c = 0; c < n_cols; c++) {
+    for (int r = minX; r < min(maxX, n_rows); r++) {
+    for (int c = minY; c < min(maxY, n_cols); c++) {
         // number of boids in this grid cell
-        int n_boids = grid_cell_sizes[r * n_cols + c];
+        //int n_boids = grid_cell_sizes[r * n_cols + c];
+        int tex_index = grid_cell_sizes[r * n_cols + c];
+        int n_boids;
+        if (r * n_cols + c == n_rows * n_cols - 1) {
+            n_boids = tex_size - tex_index;
+        } else {
+            n_boids = grid_cell_sizes[r * n_cols + c + 1] - tex_index;
+        }
 
         vec2 x_range = vec2(grid_width * r, grid_width * (r+1));
         vec2 y_range = vec2(grid_height * c, grid_height * (c+1));
 
         // check if my circle intersects this bbox
+        /*
         if (circleInRect(my_position, x_range, y_range) == 0) {
             // don't intersect, so skip to the next grid cell tex index
             //tex_index += n_boids / 4 + int(n_boids % 4 != 0);
             tex_index += n_boids;
             continue;
-        }
+        }*/
         
         
         // Circle does intersect, so iterate through boids
@@ -113,6 +130,7 @@ void main() {
             tex_index += 1;
         }
     }
+
     }
 
     if (numClose > 0) {

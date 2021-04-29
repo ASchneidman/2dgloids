@@ -40,6 +40,7 @@
 
 #define RENDER (false)
 
+
 #define THREADS 8
 
 // The Width of the screen
