@@ -133,6 +133,14 @@ void State::Init() {
     glBindBufferRange(GL_UNIFORM_BUFFER, 1, UBO, 0, N_ROWS * N_COLS * sizeof(GLint));
 
 
+    // Allocate buffer for inputs
+    glGenBuffers(1, &inputs_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, inputs_buffer);
+    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * 4 * sizeof(GLfloat), NULL, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (void*)0);
+    glVertexAttribDivisor(0, 1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
 
@@ -140,8 +148,9 @@ void State::Init() {
 
 
     forces = new GLfloat[NUM_BOIDS * 2];
-
     grid_cell_sizes = new GLint[N_ROWS * N_COLS];
+    inputs = new GLfloat[NUM_BOIDS * 4];
+
 
     for (int r = 0; r < N_ROWS; r++) {
         for (int c = 0; c < N_COLS; c++) {
@@ -172,6 +181,11 @@ void State::Update(GLfloat dt) {
         int c = percent_y * N_COLS;
 
         grid[r][c]->push_back(i);
+        
+        inputs[4 * i] = b->position.x;
+        inputs[4 * i + 1] = b->position.y;
+        inputs[4 * i + 2] = b->velocity.x;
+        inputs[4 * i + 3] = b->velocity.y;
     }
 
 
@@ -186,21 +200,29 @@ void State::Update(GLfloat dt) {
 
             // insert all the boids
             for (int i = 0; i < n_boids; i++) {
-                position_velocity.push_back((*cell)[i]);
+                //position_velocity.push_back((*cell)[i]);
+                Boid *b = boids[(*cell)[i]];
+                position_velocity.push_back(b->position.x);
+                position_velocity.push_back(b->position.y);
+                position_velocity.push_back(b->velocity.x);
+                position_velocity.push_back(b->velocity.y);
             }
 
 
 
             // round up to next multiple of 4
+            /*
             if (position_velocity.size() % 4 != 0) {
                 position_velocity.insert(position_velocity.end(), 4 - (position_velocity.size() % 4), 0);
             }
+            */
         }
     }
 
-    int offset = position_velocity.size();
+    //int offset = position_velocity.size();
     assert(position_velocity.size() % 4 == 0);
 
+    /*
     for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         position_velocity.push_back(b->position.x);
@@ -208,11 +230,13 @@ void State::Update(GLfloat dt) {
         position_velocity.push_back(b->velocity.x);
         position_velocity.push_back(b->velocity.y);
     }
+    */
+    
 
     glUseProgram(forceProgram);
     glBindVertexArray(vao);
 
-    glUniform1i(glGetUniformLocation(forceProgram, "position_velocity_offset"), offset / 4);
+    //glUniform1i(glGetUniformLocation(forceProgram, "position_velocity_offset"), offset / 4);
 
     glUniform1f(glGetUniformLocation(forceProgram, "nearby_dist"), nearby_dist);
     glUniform1f(glGetUniformLocation(forceProgram, "max_velocity"), max_velocity);
@@ -223,11 +247,18 @@ void State::Update(GLfloat dt) {
     glUniform1f(glGetUniformLocation(forceProgram, "position_weight"), position_weight);
 
 
+    // Send over the inputs
+    glBindBuffer(GL_ARRAY_BUFFER, inputs_buffer);
+    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat) * 4, inputs, GL_STATIC_DRAW);
+
+
+    // Send over the grid cell sizes
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, N_ROWS * N_COLS * sizeof(GLint), grid_cell_sizes);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
+    // Send over the content of the grids
     // bind texture
     glBindBuffer(GL_TEXTURE_BUFFER, tbo);
     // Send data

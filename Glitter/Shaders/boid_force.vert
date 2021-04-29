@@ -1,3 +1,4 @@
+layout (location = 0) in vec4 p_v;
 
 out vec2 total_force;
 
@@ -16,7 +17,7 @@ uniform float collision_weight;
 uniform float align_weight;
 uniform float position_weight;
 
-uniform int position_velocity_offset;
+//uniform int position_velocity_offset;
 
 /**
  * Credit to 15-418/618 Staff for this function!!
@@ -67,12 +68,12 @@ void main() {
     // for each grid cell, have to store the number of boids in that cell and the sum 
     // of total boid indices will be NUM_BOIDS, however each texel stores 4 indices
 
-    vec4 p_v = texelFetch(position_velocity, gl_InstanceID + position_velocity_offset);
+    //vec4 p_v = texelFetch(position_velocity, gl_InstanceID + position_velocity_offset);
 
     vec2 my_position = p_v.xy;
     vec2 my_velocity = p_v.zw;
-    
 
+    
     int tex_index = 0;
     float grid_width = screen_width / float(n_rows);
     float grid_height = screen_height / float(n_cols);
@@ -87,11 +88,37 @@ void main() {
         // check if my circle intersects this bbox
         if (circleInRect(my_position, x_range, y_range) == 0) {
             // don't intersect, so skip to the next grid cell tex index
-            tex_index += n_boids / 4 + int(n_boids % 4 != 0);
+            //tex_index += n_boids / 4 + int(n_boids % 4 != 0);
+            tex_index += n_boids;
             continue;
         }
         
         // Circle does intersect, so iterate through boids
+        for (int b = 0; b < n_boids; b++) {
+            vec4 other_p_v = texelFetch(position_velocity, tex_index);
+            vec2 other_position = other_p_v.xy;
+            vec2 other_velocity = other_p_v.zw;
+            // don't have indices of boids, so if position and velocity is 
+            // same, skip
+            if (my_position == other_position && my_velocity == other_velocity) {
+                tex_index += 1;
+                continue;
+            }
+
+            float dist = distance(other_position, my_position);
+            float is_near = float(dist < nearby_dist);
+            if (dist < nearby_dist) {
+                flockCenter += other_position * is_near;
+                flockHeading += other_velocity * is_near;
+                numClose += int(dist < nearby_dist);
+                // extra dist is so dir is normalized
+                float scaling = (1.0f / (dist * dist));
+                vec2 dir = normalize(my_position - other_position);
+                forceCollision += dir * scaling * is_near;
+            }
+            tex_index += 1;
+        }
+        /*
         for (int b = 0; b < n_boids; b+=4) {
             vec4 next_four_boids = texelFetch(position_velocity, tex_index);
             for (int j = 0; j < 4; j++) {
@@ -131,6 +158,7 @@ void main() {
             }
             tex_index += 1;
         }
+        */
 
 
     }
@@ -156,5 +184,6 @@ void main() {
     }
 
     total_force = force;
+    
 }
 

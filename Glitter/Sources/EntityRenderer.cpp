@@ -57,7 +57,7 @@ void EntityRenderer::initRenderData() {
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    // Noow load in the color matrices
+    // Now load in the color matrices
     glGenBuffers(1, &color_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, color_buffer);
     glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(glm::vec3), &color_matrices[0], GL_STATIC_DRAW);
@@ -74,7 +74,7 @@ void EntityRenderer::initRenderData() {
 }
 void EntityRenderer::DrawBoids(std::vector<Boid *> &boids) {
     this->shader.Use();
-
+    
     
     glBindVertexArray(this->VAO);
     //#pragma omp parallel for

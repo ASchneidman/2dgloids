@@ -24,21 +24,21 @@ private:
 
     GLuint forceShader;
     GLuint forceProgram;
-
-    GLuint force_buffer;
-
-
-    GLuint UBO;
-
     GLuint vao;
 
+    // BUFFERS
+    GLuint force_buffer;
+    GLuint UBO;
     GLuint tbo;
     GLuint texture_buffer;
+    GLuint inputs_buffer;
 
-    //GLfloat *position_velocity;
+
     std::vector<GLfloat> position_velocity;
     GLfloat *forces;
     GLint *grid_cell_sizes;
+    
+    GLfloat *inputs;
 
     //std::vector<int> grid[N_ROWS * N_COLS];
     std::vector<int> *grid[N_ROWS][N_COLS];
