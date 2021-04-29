@@ -23,6 +23,11 @@ State state(SCREEN_WIDTH, SCREEN_HEIGHT);
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+void ErrorCallback(int, const char* err_str)
+{
+    std::cout << "GLFW Error: " << err_str << std::endl;
+}
+
 int main(int argc, char * argv[]) {
     (void)argc; (void)argv;
 
@@ -33,6 +38,9 @@ int main(int argc, char * argv[]) {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    
+    glfwSetErrorCallback(ErrorCallback);
+
     auto mWindow = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "OpenGL", nullptr, nullptr);
 
     // Check for Valid Context

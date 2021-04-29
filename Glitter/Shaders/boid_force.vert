@@ -1,6 +1,6 @@
 
-out float force_x;
-out float force_y;
+out vec2 total_force;
+//out float force_y;
 
 uniform samplerBuffer position_velocity;
 
@@ -68,7 +68,8 @@ void main() {
     // for each grid cell, have to store the number of boids in that cell and the sum 
     // of total boid indices will be NUM_BOIDS, however each texel stores 4 indices
 
-    vec4 p_v = texelFetch(position_velocity, gl_VertexID + position_velocity_offset);
+    //vec4 p_v = texelFetch(position_velocity, gl_VertexID + position_velocity_offset);
+    vec4 p_v = texelFetch(position_velocity, gl_InstanceID + position_velocity_offset);
 
     vec2 my_position = p_v.xy;
     vec2 my_velocity = p_v.zw;
@@ -118,7 +119,8 @@ void main() {
                     i = int(next_four_boids.w);
                 }
 
-                if (i == gl_VertexID) {
+                //if (i == gl_VertexID) {
+                if (i == gl_InstanceID) {
                     continue;
                 }
 
@@ -164,7 +166,8 @@ void main() {
         force = forceCollision + forceAlign + forcePos;
     }
 
-    force_x = force.x;
-    force_y = force.y;
+    //force_x = force.x;
+    //force_y = force.y;
+    total_force = force;
 }
 

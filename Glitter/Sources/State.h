@@ -25,8 +25,9 @@ private:
     GLuint forceShader;
     GLuint forceProgram;
 
-    GLuint force_x_buffer;
-    GLuint force_y_buffer;
+    GLuint force_buffer;
+    //GLuint force_x_buffer;
+    //GLuint force_y_buffer;
 
 
     GLuint vao;
@@ -36,8 +37,9 @@ private:
 
     //GLfloat *position_velocity;
     std::vector<GLfloat> position_velocity;
-    GLfloat *forces_x;
-    GLfloat *forces_y;
+    GLfloat *forces;
+    //GLfloat *forces_x;
+    //GLfloat *forces_y;
 
     //std::vector<int> grid[N_ROWS * N_COLS];
     std::vector<int> *grid[N_ROWS][N_COLS];

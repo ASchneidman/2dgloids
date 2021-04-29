@@ -68,7 +68,8 @@ void State::Init() {
     forceShaderFile.close();
 
     // Create shader program
-    const char *forceShaderStr = forceShaderStream.str().c_str();
+    auto cppstr = forceShaderStream.str();
+    const char *forceShaderStr = cppstr.c_str();
     forceShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(forceShader, 1, &forceShaderStr, nullptr);
     glCompileShader(forceShader);
@@ -78,8 +79,10 @@ void State::Init() {
     forceProgram = glCreateProgram();
     glAttachShader(forceProgram, forceShader);
 
-    const GLchar* feedbackNames[2] = {"force_x", "force_y"};
-    glTransformFeedbackVaryings(forceProgram, 2, feedbackNames, GL_SEPARATE_ATTRIBS);
+    //const GLchar* feedbackNames[2] = {"force_x", "force_y"};
+    const GLchar *feedbackNames[1] = {"total_force"};
+    //glTransformFeedbackVaryings(forceProgram, 2, feedbackNames, GL_SEPARATE_ATTRIBS);
+    glTransformFeedbackVaryings(forceProgram , 1, feedbackNames, GL_INTERLEAVED_ATTRIBS);
     glLinkProgram(forceProgram);
 
     glUseProgram(forceProgram);
@@ -88,6 +91,10 @@ void State::Init() {
     glBindVertexArray(vao);
 
     // Generate the buffers
+    glGenBuffers(1, &force_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, force_buffer);
+    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat) * 2, nullptr, GL_STATIC_READ);
+    /*
     glGenBuffers(1, &force_x_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);
     glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
@@ -95,6 +102,7 @@ void State::Init() {
     glGenBuffers(1, &force_y_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, force_y_buffer);
     glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat), nullptr, GL_STATIC_READ);
+    */
 
 
     // Create the texture buffer
@@ -111,15 +119,16 @@ void State::Init() {
 
 
     // Bind them
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, force_x_buffer);
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, force_y_buffer);
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, force_buffer);
+    //glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, force_x_buffer);
+    //glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, force_y_buffer);
 
     glBindVertexArray(0);
 
 
-    //position_velocity = new GLfloat[4 * NUM_BOIDS];
-    forces_x = new GLfloat[NUM_BOIDS];
-    forces_y = new GLfloat[NUM_BOIDS];
+    forces = new GLfloat[NUM_BOIDS * 2];
+    //forces_x = new GLfloat[NUM_BOIDS];
+    //forces_y = new GLfloat[NUM_BOIDS];
 
     //grid = new std::vector<int>[N_ROWS * N_COLS];
     for (int r = 0; r < N_ROWS; r++) {
@@ -221,24 +230,29 @@ void State::Update(GLfloat dt) {
     glEnable(GL_RASTERIZER_DISCARD);
 
     glBeginTransformFeedback(GL_POINTS);
-        glDrawArrays(GL_POINTS, 0, NUM_BOIDS);
+        glDrawArraysInstanced(GL_POINTS, 0, 1, NUM_BOIDS);
     glEndTransformFeedback();
 
     glDisable(GL_RASTERIZER_DISCARD);
 
     glFlush();
     // Bind buffer to read from
+    glBindBuffer(GL_ARRAY_BUFFER, force_buffer);
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, NUM_BOIDS * sizeof(GLfloat) * 2, forces);
+    /*
     glBindBuffer(GL_ARRAY_BUFFER, force_x_buffer);
     glGetBufferSubData(GL_ARRAY_BUFFER, 0, NUM_BOIDS * sizeof(GLfloat), forces_x);
 
     glBindBuffer(GL_ARRAY_BUFFER, force_y_buffer);
     glGetBufferSubData(GL_ARRAY_BUFFER, 0, NUM_BOIDS * sizeof(GLfloat), forces_y);
+    */
 
     glBindVertexArray(0);
 
     for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
-        b->Update(glm::vec2(forces_x[i], forces_y[i]), dt);
+        b->Update(glm::vec2(forces[2*i], forces[2*i+1]), dt);
+        //b->Update(glm::vec2(forces_x[i], forces_y[i]), dt);
     }
 
 
