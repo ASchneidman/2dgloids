@@ -30,7 +30,7 @@
 
 #define NEARBY_DIST 30.0f
 
-#define ER_DEFAULT_SIZE 1.0f
+#define ER_DEFAULT_SIZE 2.0f
 #define ER_DEFAULT_ROT 0.0f
 
 #define VISUALIZE (false)
@@ -38,7 +38,7 @@
 #define N_ROWS 100
 #define N_COLS 10
 
-#define RENDER (false)
+#define RENDER (true)
 
 
 #define THREADS 8

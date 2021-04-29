@@ -30,6 +30,9 @@ glm::vec2 Boid::SteerToward(glm::vec2 force) {
 }
 
 void Boid::Update(glm::vec2 force, float dt) {
+    if (isnan(force.x) || isnan(force.y)) {
+        force = glm::vec2(0.0);
+    }
     this->velocity += force * dt;
     this->velocity = clamp_magnitude(this->velocity, max_velocity);
     

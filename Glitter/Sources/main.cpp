@@ -83,17 +83,16 @@ int main(int argc, char * argv[]) {
         glClear(GL_COLOR_BUFFER_BIT);
 
         float update_start = glfwGetTime();
-        state.Update(deltaTime);
+        //state.Update(deltaTime);
+        state.Update(0.01);
         float update_end = glfwGetTime();
         float render_start = glfwGetTime();
         state.Render();
         float render_end = glfwGetTime();
 
-        /*
         printf("\rUpdate: %.3f s, Render: %.3f s, Max Vel.: %.3f, View Distance: %.3f, Collision: %.3f, Align: %.3f, Position: %.3f, Gravity: %.3f", 
         update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
         collision_weight, align_weight, position_weight, gravity_weight);
-        */
        
         
         averageFrameTime += update_end - update_start;

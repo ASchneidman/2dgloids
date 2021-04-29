@@ -38,6 +38,8 @@ private:
     GLfloat *forces;
     //GLint *grid_cell_sizes;
     std::vector<int> *grid_cell_sizes;
+
+    int indices[N_ROWS * N_COLS];
     
     GLfloat *inputs;
 

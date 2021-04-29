@@ -215,7 +215,6 @@ void State::Update(GLfloat dt) {
     }
 
     // Perform exclusive scan to get the start indices of each grid cell
-    int indices[N_ROWS * N_COLS];
     indices[0] = 0;
     for (int i = 1; i < grid_cell_sizes->size(); i++) {
         indices[i] = indices[i-1] + (*grid_cell_sizes)[i-1];
