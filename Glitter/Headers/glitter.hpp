@@ -38,8 +38,7 @@
 #define N_ROWS 20
 #define N_COLS 10
 
-#define RENDER (true)
-
+#define RENDER (false)
 
 #define THREADS 8
 
