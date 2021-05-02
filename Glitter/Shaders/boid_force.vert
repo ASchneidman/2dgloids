@@ -66,7 +66,6 @@ void main() {
     vec2 my_velocity = p_v.zw;
 
     
-    //int tex_index = 0;
     float grid_width = screen_width / float(n_rows);
     float grid_height = screen_height / float(n_cols);
 
@@ -77,8 +76,6 @@ void main() {
 
     int tex_size = textureSize(position_velocity);
 
-    //for (int r = 0; r < n_rows; r++) {
-    //for (int c = 0; c < n_cols; c++) {
     for (int r = minX; r < min(maxX, n_rows); r++) {
     for (int c = minY; c < min(maxY, n_cols); c++) {
         // number of boids in this grid cell
@@ -93,16 +90,6 @@ void main() {
 
         vec2 x_range = vec2(grid_width * r, grid_width * (r+1));
         vec2 y_range = vec2(grid_height * c, grid_height * (c+1));
-
-        // check if my circle intersects this bbox
-        /*
-        if (circleInRect(my_position, x_range, y_range) == 0) {
-            // don't intersect, so skip to the next grid cell tex index
-            //tex_index += n_boids / 4 + int(n_boids % 4 != 0);
-            tex_index += n_boids;
-            continue;
-        }*/
-        
         
         // Circle does intersect, so iterate through boids
         for (int b = 0; b < n_boids; b++) {
@@ -111,17 +98,19 @@ void main() {
             vec2 other_velocity = other_p_v.zw;
             // don't have indices of boids, so if position and velocity is 
             // same, skip
+            float not_me = float(my_position != other_position || my_velocity != other_velocity);
+            
             if (my_position == other_position && my_velocity == other_velocity) {
                 tex_index += 1;
                 continue;
             }
 
             float dist = distance(other_position, my_position);
-            float is_near = float(dist < nearby_dist);
+            float is_near = float(dist < nearby_dist) * not_me;
 
             flockCenter += other_position * is_near;
             flockHeading += other_velocity * is_near;
-            numClose += int(dist < nearby_dist);
+            numClose += int(is_near);
             // extra dist is so dir is normalized
             float scaling = (1.0f / (dist * dist));
             vec2 dir = normalize(my_position - other_position);

@@ -25,7 +25,6 @@ glm::vec2 clamp_magnitude(glm::vec2 vec, float max_value) {
     return vec;
 }
 
-
 glm::vec2 Boid::SteerToward(glm::vec2 force) {
     return clamp_magnitude(glm::normalize(force) * max_velocity - velocity, MAX_FORCE); 
 }
