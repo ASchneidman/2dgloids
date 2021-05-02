@@ -119,6 +119,7 @@ QuadTreeHead::QuadTreeHead(glm::vec2 bounds_x, glm::vec2 bounds_y, std::vector<B
 }
 
 void QuadTreeHead::clear() {
+    printf("\n nodes size: %d \n", nodes.size());
     free_elements.clear();
     for (int i = 0; i < elements.size(); i++) {
         free_elements.push_back(i);
@@ -186,7 +187,7 @@ bool qt_insert(QuadTreeHead *head, QuadTree_t *qt, Boid *b, float x_min, float x
         // Insert all my boids
         int current_child = qt->first_element;
         for (int i = 0; i < qt->num_boids; i++) {
-            assert(current_child != -1);
+            //assert(current_child != -1);
             QuadTreeElem_t *elem = head->elements[current_child];
             int next_child = elem->next;
             Boid *o = (*head->boids)[elem->boid];
@@ -232,7 +233,7 @@ void qt_query(QuadTreeHead *head, QuadTree_t *qt, Boid *b, std::vector<Boid *> &
         // Not subdivided, so iterate
         int current_child = qt->first_element;
         for (int i = 0; i < qt->num_boids; i++) {
-            assert(current_child != -1);
+            //assert(current_child != -1);
             QuadTreeElem_t *elem = head->elements[current_child];
             boids.push_back((*head->boids)[elem->boid]);
             current_child = elem->next;
