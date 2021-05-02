@@ -78,6 +78,77 @@ void State::Update(GLfloat dt) {
     }
     do_update += 1;
 
+    /*
+    float s = glfwGetTime();
+    #pragma omp parallel for schedule(dynamic, 100) num_threads(THREADS)
+    for (int i = 0; i < qt->nodes.size(); i++) {
+        QuadTree_t *node = qt->nodes[i];
+        if (!node->is_subdivided) {
+            for (int j = 0; j < node->num_boids; j++) {
+                Boid *b = node->boids[j];
+                glm::vec2 forceCollision(0.0f, 0.0f);
+                glm::vec2 forceAlign(0.0f);
+                glm::vec2 forcePos(0.0f);
+                glm::vec2 force(0.0f);
+                glm::vec2 forceRand(0.0f);
+
+                glm::vec2 flockCenter(0.0, 0.0);
+                glm::vec2 flockHeading(0.0, 0.0);
+                int numClose = 0;
+
+                std::vector<Boid *> found_boids;
+                qt->query(b, found_boids);
+                for (Boid *other : found_boids) {
+                    if (other->index == b->index) {
+                        continue;
+                    }
+                    // Collision avoidance
+                    float dist = glm::distance(other->position, b->position);
+                    if (dist < nearby_dist) {
+                        flockCenter += other->position;
+                        flockHeading += other->velocity;
+                        numClose += 1;
+                        float scaling = (1.0f / (dist * dist));
+                        glm::vec2 dir = glm::normalize(b->position - other->position);
+                        forceCollision += dir * scaling;
+                    }
+                }
+            
+                if (numClose > 0) {
+                    forceAlign = flockHeading;
+                    forceAlign /= numClose;
+
+                    flockCenter /= numClose;
+                    forcePos = (flockCenter - b->position);
+
+                    forceCollision = b->SteerToward(forceCollision);
+                    forceCollision *= collision_weight;
+
+                    forceAlign = b->SteerToward(forceAlign);
+                    forceAlign *= align_weight;
+
+                    forcePos = b->SteerToward(forcePos);
+                    forcePos *= position_weight;
+
+                    force = forceCollision + forceAlign + forcePos;
+
+                }
+
+
+                glm::vec2 forceGravity(0.0f, 1000.0f);
+                force += forceGravity * gravity_weight;
+
+                forces[b->index] = force;
+
+            }
+        }
+    }
+    float e = glfwGetTime();
+    printf("Query time: %.3f\n", e-s);
+    */
+
+
+    
     float s = glfwGetTime();
     #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {
@@ -138,6 +209,7 @@ void State::Update(GLfloat dt) {
     }
     float e = glfwGetTime();
     printf("query time: %.3f\n", e-s);
+    
 
     #pragma omp parallel for schedule(static) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {

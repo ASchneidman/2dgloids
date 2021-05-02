@@ -58,7 +58,7 @@ class QuadTreeHead {
         };
         void visualize();
         void clear();
-    private:
+        
         QuadTree_t *first;
         std::vector<QuadTree_t *>nodes;
 
