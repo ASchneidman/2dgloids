@@ -119,7 +119,6 @@ QuadTreeHead::QuadTreeHead(glm::vec2 bounds_x, glm::vec2 bounds_y, std::vector<B
 }
 
 void QuadTreeHead::clear() {
-    printf("\n nodes size: %d \n", nodes.size());
     free_elements.clear();
     for (int i = 0; i < elements.size(); i++) {
         free_elements.push_back(i);
