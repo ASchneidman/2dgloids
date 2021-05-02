@@ -16,7 +16,7 @@
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
 
 int do_update = 0;
-int update_frames = 10;
+int update_frames = 1;
 
 std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
 
@@ -54,7 +54,7 @@ void State::Init() {
         this->boids.push_back(new Boid(initPos, initialVel, this->Width, this->Height, i));
     }
 
-    qt = new QuadTreeHead(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height));
+    qt = new QuadTreeHead(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height), &boids);
 }
 
 
@@ -63,7 +63,7 @@ void State::Update(GLfloat dt) {
 
     if (do_update % update_frames == 0) {
         qt->clear();
-        #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
+        //#pragma omp parallel for schedule(dynamic) num_threads(THREADS)
         for (size_t i = 0; i < boids.size(); i++) {
             Boid *b = boids[i];
             qt->insert(b);
@@ -72,7 +72,7 @@ void State::Update(GLfloat dt) {
     }
     do_update += 1;
 
-    #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
+    //#pragma omp parallel for schedule(dynamic) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         glm::vec2 forceCollision(0.0f, 0.0f);
@@ -140,7 +140,7 @@ void State::Update(GLfloat dt) {
 void State::Render() {
     Renderer->DrawBoids(boids);
     if (qt && VISUALIZE) {
-        qt->visualize();
+        //qt->visualize();
     }
 }
 

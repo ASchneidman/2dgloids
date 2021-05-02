@@ -19,7 +19,7 @@ void main() {
 
 )";
 
-std::vector<QuadTree_t *> *all_nodes;
+//std::vector<QuadTree_t *> *all_nodes;
 
 /**
  * Credit to 15-418/618 Staff for this function!!
@@ -40,7 +40,7 @@ bool circleInRect(glm::vec2 &circle_pos, float x_min, float x_max, float y_min, 
         return false;
     }
 }
-
+/*
 void checkCompileErrors(unsigned int object, std::string type)
 {
     int success;
@@ -67,18 +67,26 @@ void checkCompileErrors(unsigned int object, std::string type)
                       << std::endl;
         }
     }
-}
+}*/
 
 
-QuadTreeHead::QuadTreeHead(glm::vec2 bounds_x, glm::vec2 bounds_y) {
-    //first = new QuadTree();
-    first = (QuadTree_t*)malloc(sizeof(QuadTree_t));
-    qt_init(first);
+QuadTreeHead::QuadTreeHead(glm::vec2 bounds_x, glm::vec2 bounds_y, std::vector<Boid *> *boids) {
+    // Preallocate all elements
+    elements.reserve(NUM_BOIDS);
+    while (elements.size() < NUM_BOIDS) {
+        elements.push_back(new QuadTreeElem_t);
+        free_elements.push_back(elements.size()-1);
+    }
+
+
     this->bounds_x = bounds_x;
     this->bounds_y = bounds_y;
+    nodes.push_back(new QuadTree_t);
+    qt_init(nodes[0]);
 
-    all_nodes = &nodes;
+    this->boids = boids;
 
+    /*
     #ifdef VISUALIZE
     // vertex shader
     int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -107,145 +115,114 @@ QuadTreeHead::QuadTreeHead(glm::vec2 bounds_x, glm::vec2 bounds_y) {
 
     glUseProgram(lineShaderProgram);
     #endif
+    */
 }
 
 void QuadTreeHead::clear() {
-    //first->clear();
-    //qt_clear(first);
+    free_elements.clear();
+    for (int i = 0; i < elements.size(); i++) {
+        free_elements.push_back(i);
+    }
+
     #pragma omp parallel for schedule(static) num_threads(THREADS)
     for (size_t i = 0; i < nodes.size(); i++) {
         nodes[i]->num_boids = 0;
         nodes[i]->is_subdivided = false;
+        nodes[i]->first_element = -1;
+        // Do not set first child to -1 since it can reuse the preallocated children
     }
 }
 
-QuadTreeHead::~QuadTreeHead() {
-    //delete first;
-    qt_free(first);
-    free(first);
-    //if (VISUALIZE)
-    #ifdef VISUALIZE
-    glDeleteProgram(lineShaderProgram);
-    #endif
-}
-
+/*
 void QuadTreeHead::visualize() {
     glUseProgram(lineShaderProgram);
-    qt_visualize(first, bounds_x.x, bounds_x.y, bounds_y.x, bounds_y.y);
+    qt_visualize(nodes[0], bounds_x.x, bounds_x.y, bounds_y.x, bounds_y.y);
 }
+*/
 
 void qt_init(QuadTree_t *qt) {
-    memset((void*)qt, 0, sizeof(QuadTree_t));
-
-    qt->insert_lock = (omp_lock_t*)malloc(sizeof(omp_lock_t));
-    qt->subdivide_lock = (omp_lock_t*)malloc(sizeof(omp_lock_t));
-    omp_init_lock(qt->insert_lock);
-    omp_init_lock(qt->subdivide_lock);
-} 
-
-void qt_free(QuadTree_t *qt) {
-    if (qt->is_subdivided) {
-        qt_free(qt->upperLeft);
-        qt_free(qt->upperRight);
-        qt_free(qt->lowerLeft);
-        qt_free(qt->lowerRight);
-    }
-    omp_destroy_lock(qt->insert_lock);
-    omp_destroy_lock(qt->subdivide_lock);
-    free(qt->insert_lock);
-    free(qt->subdivide_lock);
-    if (VISUALIZE) {
-        if (qt->buffers_initialized) {
-            glDeleteVertexArrays(1, &qt->VAO);
-            glDeleteBuffers(1, &qt->VBO);
-        }
-    }
+    qt->first_child = -1;
+    qt->first_element = -1;
+    qt->num_boids = 0;
+    qt->is_subdivided = false;
 }
 
-bool qt_insert(QuadTree_t *qt, Boid *b, float x_min, float x_max, float y_min, float y_max) {
+bool qt_insert(QuadTreeHead *head, QuadTree_t *qt, Boid *b, float x_min, float x_max, float y_min, float y_max, int depth) {
     if (b->position.x < x_min || b->position.x >= x_max || 
         b->position.y < y_min || b->position.y >= y_max) {
             return false;
     }
 
-    int success = 0;
-    omp_set_lock(qt->insert_lock);
-    if (qt->num_boids < NODE_CAPACITY) {
-        qt->boids[qt->num_boids] = b;
+    if (qt->num_boids < NODE_CAPACITY || depth == MAX_DEPTH) {
+        int elem_index = head->alloc_elem();
+        QuadTreeElem_t *elem = head->elements[elem_index];
+        elem->boid = b->index;
+        elem->next = qt->first_element;
+        // first boid is now the last element in the elements list
+        qt->first_element = elem_index;
         qt->num_boids += 1;
-        success = 1;
-    }
-    omp_unset_lock(qt->insert_lock);
-    if (success) {
         return true;
-    }
-
-
-    int did_subdivde = 0;
-    if (!qt->is_subdivided) {
-        omp_set_lock(qt->subdivide_lock);
-        if (!qt->is_subdivided) {
-            did_subdivde = 1;
-
-            if (qt->upperLeft == NULL) {
-                // alloc all in close proximity
-                QuadTree_t *children = (QuadTree_t*)malloc(sizeof(QuadTree_t) * 4);
-                qt->upperLeft = children;
-                qt->upperRight = &children[1];
-                qt->lowerLeft = &children[2];
-                qt->lowerRight = &children[3];
-                qt_init(qt->upperLeft);
-                qt_init(qt->upperRight);
-                qt_init(qt->lowerLeft);
-                qt_init(qt->lowerRight);
-            }
-            qt->is_subdivided = true;
-        }
-        omp_unset_lock(qt->subdivide_lock);
-    }
-
-    if (did_subdivde) {
-        // This can be done w/o the subdivide lock
-        #pragma omp critical
-        {
-            all_nodes->push_back(qt->upperLeft);
-            all_nodes->push_back(qt->upperRight);
-            all_nodes->push_back(qt->lowerLeft);
-            all_nodes->push_back(qt->lowerRight);
-        }
     }
 
     float middle_x = (x_min + x_max) / 2;
     float middle_y = (y_min + y_max) / 2;
-    if (did_subdivde) {
-        for (int i = 0; i < qt->num_boids; i++) {
-            Boid *o = qt->boids[i];
-            if (qt_insert(qt->upperLeft, o, x_min, middle_x, middle_y, y_max))
-                continue;
-            if (qt_insert(qt->upperRight, o, middle_x, x_max, middle_y, y_max))
-                continue;
-            if (qt_insert(qt->lowerLeft, o, x_min, middle_x, y_min, middle_y))
-                continue;
-            if (qt_insert(qt->lowerRight, o, middle_x, x_max, y_min, middle_y))
-                continue;
+
+    if (!qt->is_subdivided) {
+
+        if (qt->first_child == -1) {
+            QuadTree_t *children = new QuadTree_t[4];
+            head->nodes.push_back(&children[0]);
+            qt->first_child = head->nodes.size() - 1;
+            head->nodes.push_back(&children[1]);
+            head->nodes.push_back(&children[2]);
+            head->nodes.push_back(&children[3]);
+            qt_init(&children[0]);
+            qt_init(&children[1]);
+            qt_init(&children[2]);
+            qt_init(&children[3]);
         }
+
+
+        // Insert all my boids
+        int current_child = qt->first_element;
+        for (int i = 0; i < qt->num_boids; i++) {
+            assert(current_child != -1);
+            QuadTreeElem_t *elem = head->elements[current_child];
+            int next_child = elem->next;
+            Boid *o = (*head->boids)[elem->boid];
+            // Remove elem from alloced list
+            head->dealloc_elem(current_child);
+
+            current_child = next_child;
+            
+            if (qt_insert(head, head->nodes[qt->first_child], o, x_min, middle_x, middle_y, y_max, depth+1))
+                continue;
+            if (qt_insert(head, head->nodes[qt->first_child + 1], o, middle_x, x_max, middle_y, y_max, depth+1))
+                continue;
+            if (qt_insert(head, head->nodes[qt->first_child + 2], o, x_min, middle_x, y_min, middle_y, depth+1))
+                continue;
+            if (qt_insert(head, head->nodes[qt->first_child + 3], o, middle_x, x_max, y_min, middle_y, depth+1))
+                continue;
+            
+        }
+
+        qt->is_subdivided = true;
+        qt->first_element = -1;
     }
-    
 
-    if (qt_insert(qt->upperLeft, b, x_min, middle_x, middle_y, y_max))
-        return true;
-    if (qt_insert(qt->upperRight, b, middle_x, x_max, middle_y, y_max))
-        return true;
-    if (qt_insert(qt->lowerLeft, b, x_min, middle_x, y_min, middle_y))
-        return true;
-    if (qt_insert(qt->lowerRight, b, middle_x, x_max, y_min, middle_y))
-        return true;
 
+    if (qt_insert(head, head->nodes[qt->first_child], b, x_min, middle_x, middle_y, y_max, depth+1))
+        return true;
+    if (qt_insert(head, head->nodes[qt->first_child + 1], b, middle_x, x_max, middle_y, y_max, depth+1))
+        return true;
+    if (qt_insert(head, head->nodes[qt->first_child + 2], b, x_min, middle_x, y_min, middle_y, depth+1))
+        return true;
+    if (qt_insert(head, head->nodes[qt->first_child + 3], b, middle_x, x_max, y_min, middle_y, depth+1))
+        return true;
     return false;
 } 
 
-//void qt_query(QuadTree_t *qt, Boid *b, std::function<void(Boid *)> &iterate_function, float x_min, float x_max, float y_min, float y_max) {
-void qt_query(QuadTree_t *qt, Boid *b, std::vector<Boid *> &boids, float x_min, float x_max, float y_min, float y_max) {
+void qt_query(QuadTreeHead *head, QuadTree_t *qt, Boid *b, std::vector<Boid *> &boids, float x_min, float x_max, float y_min, float y_max) {
     // Check if sphere of influence intersects this bbox
     if (!circleInRect(b->position, x_min, x_max, y_min, y_max)) {
         return;
@@ -253,56 +230,25 @@ void qt_query(QuadTree_t *qt, Boid *b, std::vector<Boid *> &boids, float x_min, 
 
     if (!qt->is_subdivided) {
         // Not subdivided, so iterate
+        int current_child = qt->first_element;
         for (int i = 0; i < qt->num_boids; i++) {
-            //iterate_function(qt->boids[i]);
-            boids.push_back(qt->boids[i]);
+            assert(current_child != -1);
+            QuadTreeElem_t *elem = head->elements[current_child];
+            boids.push_back((*head->boids)[elem->boid]);
+            current_child = elem->next;
         }
         return;
     }
     float middle_x = (x_min + x_max) / 2;
     float middle_y = (y_min + y_max) / 2;
-    qt_query(qt->upperLeft, b, boids, x_min, middle_x, middle_y, y_max);
-    qt_query(qt->upperRight, b, boids, middle_x, x_max, middle_y, y_max);
-    qt_query(qt->lowerLeft, b, boids, x_min, middle_x, y_min, middle_y);
-    qt_query(qt->lowerRight, b, boids, middle_x, x_max, y_min, middle_y);
-    /*
-    qt_query(qt->upperLeft, b, iterate_function, x_min, middle_x, middle_y, y_max);
-    qt_query(qt->upperRight, b, iterate_function, middle_x, x_max, middle_y, y_max);
-    qt_query(qt->lowerLeft, b, iterate_function, x_min, middle_x, y_min, middle_y);
-    qt_query(qt->lowerRight, b, iterate_function, middle_x, x_max, y_min, middle_y);
-    */
 
+    qt_query(head, head->nodes[qt->first_child], b, boids, x_min, middle_x, middle_y, y_max);
+    qt_query(head, head->nodes[qt->first_child + 1], b, boids, middle_x, x_max, middle_y, y_max);
+    qt_query(head, head->nodes[qt->first_child + 2], b, boids, x_min, middle_x, y_min, middle_y);
+    qt_query(head, head->nodes[qt->first_child + 3], b, boids, middle_x, x_max, y_min, middle_y);
 }
 
-void qt_clear(QuadTree_t *qt) {
-    qt->num_boids = 0;
-    if (qt->is_subdivided) {
-        qt_clear(qt->upperLeft);
-        qt_clear(qt->upperRight);
-        qt_clear(qt->lowerLeft);
-        qt_clear(qt->lowerRight);
-    }
-    qt->is_subdivided = false;
-}
-
-void qt_clear_left(QuadTree_t *qt) {
-    qt->num_boids = 0;
-    if (qt->is_subdivided) {
-        qt_clear_left(qt->upperLeft);
-        qt_clear_left(qt->lowerLeft);
-    }
-    qt->is_subdivided = false;
-}
-
-void qt_clear_right(QuadTree_t *qt) {
-    qt->num_boids = 0;
-    if (qt->is_subdivided) {
-        qt_clear_right(qt->upperRight);
-        qt_clear_right(qt->lowerRight);
-    }
-    qt->is_subdivided = false;
-}
-
+/*
 void qt_visualize(QuadTree_t *qt, float x_min, float x_max, float y_min, float y_max) {
     if (!qt->buffers_initialized) {
         qt->buffers_initialized = 1;
@@ -345,3 +291,4 @@ void qt_visualize(QuadTree_t *qt, float x_min, float x_max, float y_min, float y
         qt_visualize(qt->lowerRight, middle_x, x_max, y_min, middle_y);
     }
 }
+*/
