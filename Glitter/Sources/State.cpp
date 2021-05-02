@@ -62,17 +62,24 @@ void State::Update(GLfloat dt) {
     glm::vec2 forces[NUM_BOIDS];
 
     if (do_update % update_frames == 0) {
+        float s = glfwGetTime();
         qt->clear();
+        float e = glfwGetTime();
+        printf("clear time: %.3f\n", e-s);
         //#pragma omp parallel for schedule(dynamic) num_threads(THREADS)
+        s = glfwGetTime();
         for (size_t i = 0; i < boids.size(); i++) {
             Boid *b = boids[i];
             qt->insert(b);
         }
+        e = glfwGetTime();
+        printf("update time: %.3f\n", e-s);
         do_update = 0;
     }
     do_update += 1;
 
-    //#pragma omp parallel for schedule(dynamic) num_threads(THREADS)
+    float s = glfwGetTime();
+    #pragma omp parallel for schedule(dynamic) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         glm::vec2 forceCollision(0.0f, 0.0f);
@@ -129,6 +136,8 @@ void State::Update(GLfloat dt) {
 
         forces[b->index] = force;
     }
+    float e = glfwGetTime();
+    printf("query time: %.3f\n", e-s);
 
     #pragma omp parallel for schedule(static) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {
