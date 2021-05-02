@@ -34,7 +34,7 @@
 
 #define VISUALIZE (false)
 
-#define NODE_CAPACITY 250
+#define NODE_CAPACITY 10
 
 #define THREADS 8
 
