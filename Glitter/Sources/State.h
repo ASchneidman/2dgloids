@@ -23,6 +23,10 @@ private:
     GLuint Width, Height;
     std::vector<Boid *> boids;
     QuadTreeHead *qt = NULL;
+
+    float *forces;
+    float *positions_velocities;
+    int *position_velocity_indices;
 };
 
 

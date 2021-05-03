@@ -79,7 +79,7 @@ typedef struct QuadTree {
     int first_element;
     int first_child;
 
-    bool is_subdivided = false;
+    int is_subdivided = false;
 
     /*
     #ifdef VISUALIZE
