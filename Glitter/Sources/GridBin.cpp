@@ -4,9 +4,8 @@
 
 
 // Grid class
-Grid::Grid(glm::vec2 bounds_x, glm::vec2 bounds_y): bounds_x(bounds_x),
-    bounds_y(bounds_y) {
-    boids = new std::vector<Boid *>;
+Grid::Grid(glm::vec2 bounds_x, glm::vec2 bounds_y): bounds_x(bounds_x), bounds_y(bounds_y) {
+    boids = new std::vector<Boid *>; // malloc ?
 }
 
 Grid::~Grid() {
@@ -62,6 +61,8 @@ GridBin::GridBin() {
     // make grid 
     float grid_x = ((float)SCREEN_WIDTH) / gridDim_M;
     float grid_y = ((float)SCREEN_HEIGHT) / gridDim_N;
+
+    // TODO: maybe parallelize 
     for (int i = 0; i < gridDim_M; i++) {
         for (int j = 0; j < gridDim_N; j++) {
             // set bounds of each grid
@@ -70,9 +71,8 @@ GridBin::GridBin() {
             grids[i][j] = new Grid(bounds_x, bounds_y);
         }
     }
-
-
 }
+
 GridBin::~GridBin() {
     for (int i = 0; i < gridDim_M; i++) {
         for (int j = 0; j < gridDim_N; j++) {
@@ -80,7 +80,10 @@ GridBin::~GridBin() {
             delete grids[i][j];
         }
     }
+}
 
+Grid *GridBin::get_grid(int i, int j) {
+    return grids[i][j];
 }
 
 Grid *GridBin::which_grid(Boid *b) {

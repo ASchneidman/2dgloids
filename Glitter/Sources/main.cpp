@@ -55,10 +55,11 @@ int main(int argc, char * argv[]) {
     float lastFrame = 0.0f;
 
     float averageFrameTime = 0.0f;
+    float averageRenderTime = 0.0f;
     float startTime = glfwGetTime();
     // Rendering Loop
     int i = 0;
-    while (glfwWindowShouldClose(mWindow) == false && i < 120) {
+    while (glfwWindowShouldClose(mWindow) == false && i < 1200) {
         // calculate delta time
         // --------------------
         float currentFrame = glfwGetTime();
@@ -74,16 +75,18 @@ int main(int argc, char * argv[]) {
 
         float update_start = glfwGetTime();
         state.Update(deltaTime);
+        // state.Update(0.01);
         float update_end = glfwGetTime();
         float render_start = glfwGetTime();
         state.Render();
         float render_end = glfwGetTime();
 
-        printf("\rUpdate time: %.3f, Render time: %.3f, Max Velocity: %.3f, View Distance: %.3f, Collision Weight: %.3f, Align Weight: %.3f, Position Weight: %.3f", 
-        update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
+        printf("\ri: %d, Update time: %.5f, Render time: %.5f, Max Velocity: %.3f, View Distance: %.3f, Collision Weight: %.3f, Align Weight: %.3f, Position Weight: %.3f\n", 
+        i, update_end - update_start, render_end - render_start, max_velocity, nearby_dist,
         collision_weight, align_weight, position_weight);
 
         averageFrameTime += (update_end - update_start);
+        averageRenderTime += (render_end - render_start);
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
@@ -92,7 +95,8 @@ int main(int argc, char * argv[]) {
     }   
     std::cout << std::endl;
 
-    printf("Average update time: %.3f\n", averageFrameTime / i);
+    printf("Average update time: %.5f\n", averageFrameTime / i);
+    printf("Average render time: %.5f\n", averageRenderTime / i);
 
     glfwTerminate();
 
