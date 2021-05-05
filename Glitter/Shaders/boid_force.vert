@@ -1,4 +1,5 @@
-layout (location = 0) in vec4 p_v;
+//layout (location = 0) in vec4 p_v;
+//layout (location = 0) in int b_index;
 
 out vec2 total_force;
 
@@ -62,8 +63,15 @@ void main() {
 
     int numClose = 0;
 
+    //total_force = vec2(b_index, 0);
+    //return;
+
+    //vec4 p_v = texelFetch(position_velocity, b_index);
+    vec4 p_v = texelFetch(position_velocity, gl_InstanceID);
+
     vec2 my_position = p_v.xy;
     vec2 my_velocity = p_v.zw;
+
 
     
     float grid_width = screen_width / float(n_rows);

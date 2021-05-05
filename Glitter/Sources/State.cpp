@@ -121,7 +121,6 @@ void State::Init() {
 
 
 
-
     // Set the binding stuff for the UBO
     GLuint buffer_index = glGetUniformBlockIndex(forceProgram, "sizes");   
     glUniformBlockBinding(forceProgram, buffer_index, 1);
@@ -130,20 +129,9 @@ void State::Init() {
 
     // Allocate storage for ubo
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-    // Size four since we have both position and velocity
     glBufferData(GL_UNIFORM_BUFFER, N_ROWS * N_COLS * sizeof(GLint), NULL, GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferRange(GL_UNIFORM_BUFFER, 1, UBO, 0, N_ROWS * N_COLS * sizeof(GLint));
-
-
-    // Allocate buffer for inputs
-    glGenBuffers(1, &inputs_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, inputs_buffer);
-    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * 4 * sizeof(GLfloat), NULL, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (void*)0);
-    glVertexAttribDivisor(0, 1);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
 
@@ -153,12 +141,14 @@ void State::Init() {
     forces = new GLfloat[NUM_BOIDS * 2];
     //grid_cell_sizes = new GLint[N_ROWS * N_COLS];
     grid_cell_sizes = new std::vector<int>(N_ROWS * N_COLS, 0);
-    inputs = new GLfloat[NUM_BOIDS * 4];
+    //inputs = new GLfloat[NUM_BOIDS * 4];
+    inputs = new GLint[NUM_BOIDS];
 
 
     for (int r = 0; r < N_ROWS; r++) {
         for (int c = 0; c < N_COLS; c++) {
             grid[r][c] = new std::vector<int>();
+            omp_init_lock(&locks[r][c]);
         }
     }
 }
@@ -168,6 +158,7 @@ void State::Init() {
 void State::Update(GLfloat dt) {
     position_velocity.clear();
     // clear grid
+    #pragma omp parallel for collapse(2) num_threads(THREADS)
     for (int r = 0; r < N_ROWS; r++) {
         for (int c = 0; c < N_COLS; c++) {
             grid[r][c]->clear();
@@ -176,6 +167,7 @@ void State::Update(GLfloat dt) {
 
 
     // Build grid
+    #pragma omp parallel for schedule(dynamic, 100) num_threads(THREADS)
     for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         float percent_x = b->position.x / SCREEN_WIDTH;
@@ -184,12 +176,9 @@ void State::Update(GLfloat dt) {
         int r = percent_x * N_ROWS;
         int c = percent_y * N_COLS;
 
+        omp_set_lock(&locks[r][c]);
         grid[r][c]->push_back(i);
-        
-        inputs[4 * i] = b->position.x;
-        inputs[4 * i + 1] = b->position.y;
-        inputs[4 * i + 2] = b->velocity.x;
-        inputs[4 * i + 3] = b->velocity.y;
+        omp_unset_lock(&locks[r][c]);
     }
 
 
@@ -201,11 +190,12 @@ void State::Update(GLfloat dt) {
             int n_boids = cell->size();
             (*grid_cell_sizes)[r * N_COLS + c] = n_boids;
 
-
             // insert all the boids
             for (int i = 0; i < n_boids; i++) {
                 //position_velocity.push_back((*cell)[i]);
                 Boid *b = boids[(*cell)[i]];
+                //inputs[b->index] = position_velocity.size() / 4;
+                inputs[position_velocity.size() / 4] = b->index;
                 position_velocity.push_back(b->position.x);
                 position_velocity.push_back(b->position.y);
                 position_velocity.push_back(b->velocity.x);
@@ -213,6 +203,7 @@ void State::Update(GLfloat dt) {
             }
         }
     }
+
 
     // Perform exclusive scan to get the start indices of each grid cell
     indices[0] = 0;
@@ -236,11 +227,6 @@ void State::Update(GLfloat dt) {
     glUniform1f(glGetUniformLocation(forceProgram, "position_weight"), position_weight);
 
 
-    // Send over the inputs
-    glBindBuffer(GL_ARRAY_BUFFER, inputs_buffer);
-    glBufferData(GL_ARRAY_BUFFER, NUM_BOIDS * sizeof(GLfloat) * 4, inputs, GL_STATIC_DRAW);
-
-
     // Send over the grid cell sizes
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, N_ROWS * N_COLS * sizeof(GLint), indices);
@@ -253,7 +239,6 @@ void State::Update(GLfloat dt) {
     // Send data
     glBufferData(GL_TEXTURE_BUFFER, position_velocity.size() * sizeof(GLfloat), position_velocity.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_TEXTURE_BUFFER, 0);
-
 
     // Actually perform the computation
     glEnable(GL_RASTERIZER_DISCARD);
@@ -272,10 +257,10 @@ void State::Update(GLfloat dt) {
     glBindVertexArray(0);
 
     for (int i = 0; i < boids.size(); i++) {
-        Boid *b = boids[i];
+        int boid_index = inputs[i];
+        Boid *b = boids[boid_index];
         b->Update(glm::vec2(forces[2*i], forces[2*i+1]), dt);
     }
-
 
 
 }

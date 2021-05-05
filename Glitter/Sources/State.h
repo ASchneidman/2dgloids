@@ -10,6 +10,7 @@
 #include <vector>
 #include "EntityRenderer.h"
 #include "Boid.h"
+#include <omp.h>
 
 class State {
 public:
@@ -41,10 +42,12 @@ private:
 
     int indices[N_ROWS * N_COLS];
     
-    GLfloat *inputs;
+    //GLfloat *inputs;
+    GLint *inputs;
 
     //std::vector<int> grid[N_ROWS * N_COLS];
     std::vector<int> *grid[N_ROWS][N_COLS];
+    omp_lock_t locks[N_ROWS][N_COLS];
 };
 
 #endif //GLITTER_STATE_H
