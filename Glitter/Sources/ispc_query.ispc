@@ -1,13 +1,11 @@
 
 struct Node
 {
-    int is_leaf;
+    // Children
+    int is_subdivided;
     int num_boids;
+    int first_child;
     int boids_start_index;
-    int upperLeft;
-    int upperRight;
-    int lowerLeft;
-    int lowerRight;
 };
 
 static inline float length(float<2> vec) {
@@ -15,7 +13,7 @@ static inline float length(float<2> vec) {
 }
 
 static inline float<2> normalize(float<2> vec) {
-    return vec / length(vec);
+    return vec / (length(vec) + 1e-10);
 }
 
 static inline float distance(float<2> a, float<2> b) {
@@ -73,23 +71,26 @@ void query(uniform float radius,
         return;
     }
 
-    if (nodes[node].is_leaf == 1) {
+    if (nodes[node].is_subdivided == 0) {
         for (int other = nodes[node].boids_start_index; other < nodes[node].boids_start_index + nodes[node].num_boids; other++) {
             float<4> other_p_v = get_p_v(positions_velocities, 4 * other);
 
-            if (other_p_v.x == boid_p_v.x && other_p_v.y == boid_p_v.y && other_p_v.z == boid_p_v.z && other_p_v.w == boid_p_v.w) {
-                continue;
-            }
+            bool not_me = !(other_p_v.x == boid_p_v.x && other_p_v.y == boid_p_v.y && other_p_v.z == boid_p_v.z && other_p_v.w == boid_p_v.w);
+
+            //if (other_p_v.x == boid_p_v.x && other_p_v.y == boid_p_v.y && other_p_v.z == boid_p_v.z && other_p_v.w == boid_p_v.w) {
+            //    continue;
+            //}
             // Collision avoidance
             float dist = distance(other_p_v.xy, boid_p_v.xy);
-            if (dist < radius) {
-                flockCenter += other_p_v.xy;
-                flockHeading += other_p_v.zw;
-                numClose += 1;
-                float scaling = (1.0f / (dist * dist));
+            int within_dist = (dist < radius) & (not_me);
+            //if (dist < radius) {
+                flockCenter += other_p_v.xy * within_dist;
+                flockHeading += other_p_v.zw * within_dist;
+                numClose += within_dist;
+                float scaling = (1.0f / (dist * dist + (1 - within_dist)));
                 float<2> dir = normalize(boid_p_v.xy - other_p_v.xy);
-                forceCollision += dir * scaling;
-            }
+                forceCollision += dir * scaling * within_dist;
+            //}
         }
         return;
     }
@@ -101,10 +102,12 @@ void query(uniform float radius,
     float<4> upperRight = {middle_x, bbox.y, middle_y, bbox.w};
     float<4> lowerLeft = {bbox.x, middle_x, bbox.z, middle_y};
     float <4> lowerRight = {middle_x, bbox.y, bbox.z, middle_y};
-    query(radius, forceCollision, forceAlign, forcePos, flockCenter, flockHeading, boid_p_v, numClose, nodes[node].upperLeft, upperLeft, nodes, positions_velocities);
-    query(radius, forceCollision, forceAlign, forcePos, flockCenter, flockHeading, boid_p_v, numClose, nodes[node].upperRight, upperRight, nodes, positions_velocities);
-    query(radius, forceCollision, forceAlign, forcePos, flockCenter, flockHeading, boid_p_v, numClose, nodes[node].lowerLeft, lowerLeft, nodes, positions_velocities);
-    query(radius, forceCollision, forceAlign, forcePos, flockCenter, flockHeading, boid_p_v, numClose, nodes[node].lowerRight, lowerRight, nodes, positions_velocities);
+
+    int first_child = nodes[node].first_child;
+    query(radius, forceCollision, forceAlign, forcePos, flockCenter, flockHeading, boid_p_v, numClose, first_child, upperLeft, nodes, positions_velocities);
+    query(radius, forceCollision, forceAlign, forcePos, flockCenter, flockHeading, boid_p_v, numClose, first_child + 1, upperRight, nodes, positions_velocities);
+    query(radius, forceCollision, forceAlign, forcePos, flockCenter, flockHeading, boid_p_v, numClose, first_child + 2, lowerLeft, nodes, positions_velocities);
+    query(radius, forceCollision, forceAlign, forcePos, flockCenter, flockHeading, boid_p_v, numClose, first_child + 3, lowerRight, nodes, positions_velocities);
 }
 
 export void compute_forces(uniform int boid_indices[],

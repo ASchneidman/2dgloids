@@ -28,13 +28,10 @@ namespace ispc { /* namespace */
 #ifndef __ISPC_STRUCT_Node__
 #define __ISPC_STRUCT_Node__
 struct Node {
-    int32_t is_leaf;
+    int32_t is_subdivided;
     int32_t num_boids;
+    int32_t first_child;
     int32_t boids_start_index;
-    int32_t upperLeft;
-    int32_t upperRight;
-    int32_t lowerLeft;
-    int32_t lowerRight;
 };
 #endif
 

@@ -8,7 +8,15 @@
 #include <vector>
 #include <list>
 
-typedef struct QuadTree QuadTree_t;
+typedef struct QuadTree {
+    int num_boids = 0;
+    // Children
+    int first_element;
+    int first_child;
+
+    int is_subdivided = false;
+} QuadTree_t;
+
 
 class QuadTreeHead;
 
@@ -47,14 +55,39 @@ class QuadTreeHead {
         void clear();
 
         int alloc_elem() {
-            assert(!free_elements.empty());
-            int ret = free_elements.front();
+            int ret;
+            //omp_set_lock(&elem_lock);
+            ret = free_elements.front();
             free_elements.pop_front();
+            //omp_unset_lock(&elem_lock);
             return ret;
         }
 
         void dealloc_elem(int elem_index) {
+            //omp_set_lock(&elem_lock);
             free_elements.push_back(elem_index);
+            //omp_unset_lock(&elem_lock);
+        }
+
+        int alloc_children() {
+            int ret = 0;
+
+            //omp_set_lock(&nodes_lock);
+
+            QuadTree_t *children = new QuadTree_t[4];
+            nodes.push_back(&children[0]);
+            ret = nodes.size() - 1;
+            nodes.push_back(&children[1]);
+            nodes.push_back(&children[2]);
+            nodes.push_back(&children[3]);
+
+            //omp_unset_lock(&nodes_lock);
+
+            qt_init(&children[0]);
+            qt_init(&children[1]);
+            qt_init(&children[2]);
+            qt_init(&children[3]);
+            return ret;
         }
 
 
@@ -68,27 +101,15 @@ class QuadTreeHead {
         glm::vec2 bounds_x;
         glm::vec2 bounds_y;
 
+        //omp_lock_t elem_lock;
+        //omp_lock_t nodes_lock;
+
         #ifdef VISUALIZE
         GLuint lineShaderProgram;
         #endif
 };
 
-typedef struct QuadTree {
-    int num_boids = 0;
-    // Children
-    int first_element;
-    int first_child;
 
-    int is_subdivided = false;
-
-    /*
-    #ifdef VISUALIZE
-    bool buffers_initialized = 0;
-    GLuint VBO;
-    GLuint VAO;
-    #endif
-    */
-} QuadTree_t;
 
 
 #endif

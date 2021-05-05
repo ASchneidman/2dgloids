@@ -34,7 +34,7 @@
 
 #define VISUALIZE (false)
 
-#define NODE_CAPACITY 10
+#define NODE_CAPACITY 100
 #define MAX_DEPTH 100000
 
 #define THREADS 8

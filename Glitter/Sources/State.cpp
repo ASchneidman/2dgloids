@@ -36,7 +36,6 @@ extern void compute_forces(int num_boids,
 int do_update = 0;
 int update_frames = 1;
 
-
 std::uniform_real_distribution<float> randDir(0.0f, 2 * glm::pi<float>());
 
 
@@ -79,6 +78,10 @@ void State::Init() {
     forces = new float[NUM_BOIDS * 2];
     positions_velocities = new float[NUM_BOIDS * 4];
     position_velocity_indices = new int[NUM_BOIDS];
+
+    for (int i = 0; i < NUM_BOIDS; i++) {
+        reordered_boids[i] = i;
+    }
 }
 
 
@@ -89,20 +92,21 @@ void State::Update(GLfloat dt) {
         float s = glfwGetTime();
         qt->clear();
         float e = glfwGetTime();
-        printf("clear time: %.3f\n", e-s);
-        //#pragma omp parallel for schedule(dynamic) num_threads(THREADS)
+        //printf("clear time: %.3f\n", e-s);
         s = glfwGetTime();
-        for (size_t i = 0; i < boids.size(); i++) {
-            Boid *b = boids[i];
+        for (size_t i = 0; i < NUM_BOIDS; i++) {
+            int boid_index = reordered_boids[i];
+            Boid *b = boids[boid_index];
             qt->insert(b);
         }
-        e = glfwGetTime();
-        printf("update time: %.3f\n", e-s);
+
+        //e = glfwGetTime();
+        //printf("update time: %.3f\n", e-s);
         do_update = 0;
     }
     do_update += 1;
 
-    float s = glfwGetTime();
+    //float s = glfwGetTime();
     // Build datastructures for ispc
     Node *nodes = new Node[qt->nodes.size()];
     
@@ -110,12 +114,9 @@ void State::Update(GLfloat dt) {
     for (int i = 0; i < qt->nodes.size(); i++) {
         QuadTree_t *node = qt->nodes[i];
 
-        nodes[i].is_leaf = !node->is_subdivided;
+        nodes[i].is_subdivided = node->is_subdivided;
         nodes[i].num_boids = node->num_boids;
-        nodes[i].upperLeft = node->first_child;
-        nodes[i].upperRight = node->first_child + 1;
-        nodes[i].lowerLeft = node->first_child + 2;
-        nodes[i].lowerRight = node->first_child + 3;
+        nodes[i].first_child = node->first_child;
 
         if (node->is_subdivided == false) {
             nodes[i].boids_start_index = p_v_index;
@@ -130,6 +131,9 @@ void State::Update(GLfloat dt) {
                 positions_velocities[4 * p_v_index + 3] = b->velocity.y;
 
                 position_velocity_indices[b->index] = p_v_index;
+
+                reordered_boids[elem->boid] = p_v_index;
+
                 p_v_index += 1;
 
                 current_child = elem->next;
@@ -138,11 +142,11 @@ void State::Update(GLfloat dt) {
     }
     float bbox[4] = {qt->bounds_x.x, qt->bounds_x.y, qt->bounds_y.x, qt->bounds_y.y};
     
-    float e = glfwGetTime();
-    printf("ISPC data struct building time: %.3f\n", e-s);
+    //float e = glfwGetTime();
+    //printf("ISPC data struct building time: %.3f\n", e-s);
 
-    s = glfwGetTime();
-    #pragma omp parallel for schedule(dynamic, 100)
+    //s = glfwGetTime();
+    #pragma omp parallel for schedule(dynamic, 250) num_threads(THREADS)
     for (int i = 0; i < qt->nodes.size(); i++) {
         QuadTree_t *node = qt->nodes[i];
         if (node->is_subdivided == false) {
@@ -159,11 +163,13 @@ void State::Update(GLfloat dt) {
 
         }
     }
-    e = glfwGetTime();
-
-    printf("ISPC query time: %.3f\n", e-s);
 
     delete[] nodes;
+
+    //e = glfwGetTime();
+
+    //printf("ISPC query time: %.3f\n", e-s);
+
 
     #pragma omp parallel for schedule(static) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {

@@ -86,6 +86,9 @@ QuadTreeHead::QuadTreeHead(glm::vec2 bounds_x, glm::vec2 bounds_y, std::vector<B
 
     this->boids = boids;
 
+    //omp_init_lock(&elem_lock);
+    //omp_init_lock(&nodes_lock);
+
     /*
     #ifdef VISUALIZE
     // vertex shader
@@ -145,6 +148,9 @@ void qt_init(QuadTree_t *qt) {
     qt->first_element = -1;
     qt->num_boids = 0;
     qt->is_subdivided = false;
+
+    //omp_init_lock(&qt->insert_lock);
+    //omp_init_lock(&qt->subdivide_lock);
 }
 
 bool qt_insert(QuadTreeHead *head, QuadTree_t *qt, Boid *b, float x_min, float x_max, float y_min, float y_max, int depth) {
@@ -153,6 +159,9 @@ bool qt_insert(QuadTreeHead *head, QuadTree_t *qt, Boid *b, float x_min, float x
             return false;
     }
 
+    bool success = false;
+    if (qt->num_boids < NODE_CAPACITY || depth == MAX_DEPTH) {
+    //omp_set_lock(&qt->insert_lock);
     if (qt->num_boids < NODE_CAPACITY || depth == MAX_DEPTH) {
         int elem_index = head->alloc_elem();
         QuadTreeElem_t *elem = head->elements[elem_index];
@@ -161,34 +170,43 @@ bool qt_insert(QuadTreeHead *head, QuadTree_t *qt, Boid *b, float x_min, float x
         // first boid is now the last element in the elements list
         qt->first_element = elem_index;
         qt->num_boids += 1;
+        success = true;
+    } else {
+        success = false;
+    }
+    //omp_unset_lock(&qt->insert_lock);
+    }
+    if (success) {
         return true;
     }
 
     float middle_x = (x_min + x_max) / 2;
     float middle_y = (y_min + y_max) / 2;
 
+    bool did_subdivide = false;
+    if (!qt->is_subdivided) {
+    //omp_set_lock(&qt->subdivide_lock);
     if (!qt->is_subdivided) {
 
         if (qt->first_child == -1) {
-            QuadTree_t *children = new QuadTree_t[4];
-            head->nodes.push_back(&children[0]);
-            qt->first_child = head->nodes.size() - 1;
-            head->nodes.push_back(&children[1]);
-            head->nodes.push_back(&children[2]);
-            head->nodes.push_back(&children[3]);
-            qt_init(&children[0]);
-            qt_init(&children[1]);
-            qt_init(&children[2]);
-            qt_init(&children[3]);
+            qt->first_child = head->alloc_children();
         }
 
+        qt->is_subdivided = true;
+        did_subdivide = true;
+    }
+    //omp_unset_lock(&qt->subdivide_lock);
+    }
 
+    if (did_subdivide) {
         // Insert all my boids
         int current_child = qt->first_element;
         for (int i = 0; i < qt->num_boids; i++) {
             //assert(current_child != -1);
             QuadTreeElem_t *elem = head->elements[current_child];
             int next_child = elem->next;
+
+            // This might not be thread safe!!
             Boid *o = (*head->boids)[elem->boid];
             // Remove elem from alloced list
             head->dealloc_elem(current_child);
@@ -203,11 +221,7 @@ bool qt_insert(QuadTreeHead *head, QuadTree_t *qt, Boid *b, float x_min, float x
                 continue;
             if (qt_insert(head, head->nodes[qt->first_child + 3], o, middle_x, x_max, y_min, middle_y, depth+1))
                 continue;
-            
         }
-
-        qt->is_subdivided = true;
-        qt->first_element = -1;
     }
 
 

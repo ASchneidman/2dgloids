@@ -59,7 +59,7 @@ int main(int argc, char * argv[]) {
     float averageFrameTime = 0.0f;
     // Rendering Loop
     int i = 0;
-    while (glfwWindowShouldClose(mWindow) == false) {
+    while (glfwWindowShouldClose(mWindow) == false && i < 120) {
         // calculate delta time
         // --------------------
         float currentFrame = glfwGetTime();
