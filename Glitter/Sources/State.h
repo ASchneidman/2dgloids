@@ -23,18 +23,6 @@ private:
     GLuint Width, Height;
     std::vector<Boid *> boids;
 
-    GLuint forceShader;
-    GLuint forceProgram;
-    GLuint vao;
-
-    // BUFFERS
-    GLuint force_buffer;
-    GLuint UBO;
-    GLuint tbo;
-    GLuint texture_buffer;
-    GLuint inputs_buffer;
-
-
     std::vector<GLfloat> position_velocity;
     GLfloat *forces;
     //GLint *grid_cell_sizes;

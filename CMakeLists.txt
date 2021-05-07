@@ -40,6 +40,15 @@ source_group("Shaders" FILES ${PROJECT_SHADERS})
 source_group("Sources" FILES ${PROJECT_SOURCES})
 source_group("Vendors" FILES ${VENDORS_SOURCES})
 
+
+add_custom_target(run ALL
+    DEPENDS compute_forces.o)
+
+add_custom_command(OUTPUT compute_forces.o
+                   COMMAND ispc ${CMAKE_SOURCE_DIR}/Glitter/Sources/compute_forces.ispc -o compute_forces.o -h ../Glitter/Sources/compute_forces.h
+                   DEPENDS ${CMAKE_SOURCE_DIR}/Glitter/Sources/compute_forces.ispc)
+
+
 add_definitions(-DGLFW_INCLUDE_NONE
                 -DPROJECT_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\")
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS}
