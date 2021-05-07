@@ -133,6 +133,8 @@ void State::Update(GLfloat dt) {
         indices[i] = indices[i-1] + (*grid_cell_sizes)[i-1];
     }
 
+
+    float s = glfwGetTime();
     #pragma omp parallel for schedule(dynamic, 100) collapse(2) num_threads(THREADS)
     for (int r = 0; r < N_ROWS; r++) {
         for (int c = 0; c < N_COLS; c++) {
@@ -140,7 +142,10 @@ void State::Update(GLfloat dt) {
             compute_forces(boid_indices, grid[r][c]->size(), nearby_dist, forces, position_velocity.data(), position_velocity.size() / 4, position_velocity_indices, indices, N_ROWS, N_COLS, SCREEN_WIDTH, SCREEN_HEIGHT, max_velocity, MAX_FORCE, collision_weight, align_weight, position_weight);
         }
     }
+    float e = glfwGetTime();
+    printf("\nquery time: %.3f\n", e-s);
 
+    #pragma omp parallel for schedule(static) num_threads(THREADS)
     for (int i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
         b->Update(glm::vec2(forces[2*i], forces[2*i+1]), dt);

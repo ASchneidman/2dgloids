@@ -102,24 +102,23 @@ export void compute_forces(uniform int boid_indices[],
             for (int b = 0; b < n_boids; b++) {
 
                 float<4> other_p_v = get_p_v(positions_velocities, 4 * p_v_index);
-                float<2> other_position = other_p_v.xy;
-                float<2> other_velocity = other_p_v.zw;
 
-                if (other_p_v.x == my_p_v.x && other_p_v.y == my_p_v.y && other_p_v.z == my_p_v.z && other_p_v.w == my_p_v.w) {
-                    p_v_index += 1;
-                    continue;
-                }
+                bool not_me = !(other_p_v.x == my_p_v.x && other_p_v.y == my_p_v.y && other_p_v.z == my_p_v.z && other_p_v.w == my_p_v.w);
 
-                float dist = distance(other_position, my_position);
-                if (dist < radius) {
-                    flockCenter += other_position;
-                    flockHeading += other_velocity;
-                    numClose += 1;
-                    // extra dist is so dir is normalized
-                    float scaling = (1.0f / (dist * dist));
-                    float<2> dir = normalize(my_position - other_position);
-                    forceCollision += dir * scaling;
-                }
+                //if (other_p_v.x == boid_p_v.x && other_p_v.y == boid_p_v.y && other_p_v.z == boid_p_v.z && other_p_v.w == boid_p_v.w) {
+                //    continue;
+                //}
+                // Collision avoidance
+                float dist = distance(other_p_v.xy, my_p_v.xy);
+                int within_dist = (dist < radius) & (not_me);
+                //if (dist < radius) {
+                    flockCenter += other_p_v.xy * within_dist;
+                    flockHeading += other_p_v.zw * within_dist;
+                    numClose += within_dist;
+                    float scaling = (1.0f / (dist * dist + (1 - within_dist)));
+                    float<2> dir = normalize(my_p_v.xy - other_p_v.xy);
+                    forceCollision += dir * scaling * within_dist;
+                //}
                 p_v_index += 1;
             }
         }

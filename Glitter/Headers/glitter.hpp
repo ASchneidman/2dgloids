@@ -30,7 +30,7 @@
 
 #define NEARBY_DIST 30.0f
 
-#define ER_DEFAULT_SIZE 2.0f
+#define ER_DEFAULT_SIZE 1.0f
 #define ER_DEFAULT_ROT 0.0f
 
 #define VISUALIZE (false)
