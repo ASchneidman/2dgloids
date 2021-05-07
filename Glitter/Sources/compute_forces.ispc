@@ -49,12 +49,13 @@ export void compute_forces(uniform int boid_indices[],
                       uniform float radius,
                       uniform float out_forces[], 
                       uniform float positions_velocities[],
-                      uniform float positions_velocities_len,
+                      uniform int positions_velocities_len,
                       uniform int positions_velocity_indices[],
                       uniform int grid_cell_sizes[],
                       uniform int n_rows,
                       uniform int n_cols,
-                      uniform float bounds[],
+                      uniform float screen_width,
+                      uniform float screen_height,
                       uniform float max_velocity,
                       uniform float max_force,
                       uniform float collision_weight,
@@ -64,7 +65,6 @@ export void compute_forces(uniform int boid_indices[],
     foreach (i = 0...num_boids-1) {
         int boid = boid_indices[i];
 
-        float<4> bbox = {bounds[0], bounds[1], bounds[2], bounds[3]};
         int my_p_v_index = 4 * positions_velocity_indices[boid];
         float<4> my_p_v = get_p_v(positions_velocities, my_p_v_index);
         float<2> my_position = my_p_v.xy;
@@ -79,9 +79,6 @@ export void compute_forces(uniform int boid_indices[],
         float<2> flockHeading = {0.0, 0.0};
 
         int numClose = 0;
-
-        float screen_width = bounds[1] - bounds[0];
-        float screen_height = bounds[3] - bounds[2];
     
         float grid_width = screen_width / (float)(n_rows);
         float grid_height = screen_height / (float)(n_cols);

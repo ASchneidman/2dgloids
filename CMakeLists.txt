@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 project(Glitter)
 
+
+
+
+
 option(GLFW_BUILD_DOCS OFF)
 option(GLFW_BUILD_EXAMPLES OFF)
 option(GLFW_BUILD_TESTS OFF)
@@ -24,7 +28,8 @@ include_directories(Glitter/Headers/
 
 file(GLOB VENDORS_SOURCES Glitter/Vendor/glad/src/glad.c)
 file(GLOB PROJECT_HEADERS Glitter/Headers/*.hpp)
-file(GLOB PROJECT_SOURCES Glitter/Sources/*.cpp)
+file(GLOB PROJECT_SOURCES Glitter/Sources/*.cpp
+                          Glitter/Sources/*.ispc)
 file(GLOB PROJECT_SHADERS Glitter/Shaders/*.comp
                           Glitter/Shaders/*.frag
                           Glitter/Shaders/*.geom
@@ -40,19 +45,18 @@ source_group("Shaders" FILES ${PROJECT_SHADERS})
 source_group("Sources" FILES ${PROJECT_SOURCES})
 source_group("Vendors" FILES ${VENDORS_SOURCES})
 
-
-add_custom_target(run ALL
-    DEPENDS compute_forces.o)
-
 add_custom_command(OUTPUT compute_forces.o
                    COMMAND ispc ${CMAKE_SOURCE_DIR}/Glitter/Sources/compute_forces.ispc -o compute_forces.o -h ../Glitter/Sources/compute_forces.h
                    DEPENDS ${CMAKE_SOURCE_DIR}/Glitter/Sources/compute_forces.ispc)
+                   
+add_custom_target(run ALL
+                    DEPENDS compute_forces.o)
 
 
 add_definitions(-DGLFW_INCLUDE_NONE
                 -DPROJECT_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\")
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS}
-                               ${PROJECT_SHADERS} ${PROJECT_CONFIGS}
+                               ${PROJECT_SHADERS} ${PROJECT_CONFIGS} compute_forces.o
                                ${VENDORS_SOURCES} Glitter/Sources/State.cpp Glitter/Sources/State.h Glitter/Sources/shader.cpp Glitter/Sources/shader.h Glitter/Sources/resourcemanager.cpp Glitter/Sources/resourcemanager.h Glitter/Sources/EntityRenderer.cpp Glitter/Sources/EntityRenderer.h Glitter/Sources/Boid.cpp Glitter/Sources/Boid.h)
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC

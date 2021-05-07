@@ -19,6 +19,8 @@
 #include <glm/gtx/color_space.hpp>
 #include <GLFW/glfw3.h>
 
+using namespace ispc;
+
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
 
 int do_update = 0;
@@ -61,11 +63,10 @@ void State::Init() {
     }
 
 
-    forces = new GLfloat[NUM_BOIDS * 2];
-    //grid_cell_sizes = new GLint[N_ROWS * N_COLS];
+    forces = new float[NUM_BOIDS * 2];
     grid_cell_sizes = new std::vector<int>(N_ROWS * N_COLS, 0);
-    //inputs = new GLfloat[NUM_BOIDS * 4];
-    inputs = new GLint[NUM_BOIDS];
+    // maps boid index to index in position_velocity array
+    position_velocity_indices = new int[NUM_BOIDS];
 
 
     for (int r = 0; r < N_ROWS; r++) {
@@ -115,10 +116,8 @@ void State::Update(GLfloat dt) {
 
             // insert all the boids
             for (int i = 0; i < n_boids; i++) {
-                //position_velocity.push_back((*cell)[i]);
                 Boid *b = boids[(*cell)[i]];
-                //inputs[b->index] = position_velocity.size() / 4;
-                inputs[position_velocity.size() / 4] = b->index;
+                position_velocity_indices[b->index] = position_velocity.size() / 4;
                 position_velocity.push_back(b->position.x);
                 position_velocity.push_back(b->position.y);
                 position_velocity.push_back(b->velocity.x);
@@ -134,13 +133,16 @@ void State::Update(GLfloat dt) {
         indices[i] = indices[i-1] + (*grid_cell_sizes)[i-1];
     }
 
-    assert(position_velocity.size() % 4 == 0);
-    
-
+    #pragma omp parallel for schedule(dynamic, 100) collapse(2) num_threads(THREADS)
+    for (int r = 0; r < N_ROWS; r++) {
+        for (int c = 0; c < N_COLS; c++) {
+            int *boid_indices = grid[r][c]->data();
+            compute_forces(boid_indices, grid[r][c]->size(), nearby_dist, forces, position_velocity.data(), position_velocity.size() / 4, position_velocity_indices, indices, N_ROWS, N_COLS, SCREEN_WIDTH, SCREEN_HEIGHT, max_velocity, MAX_FORCE, collision_weight, align_weight, position_weight);
+        }
+    }
 
     for (int i = 0; i < boids.size(); i++) {
-        int boid_index = inputs[i];
-        Boid *b = boids[boid_index];
+        Boid *b = boids[i];
         b->Update(glm::vec2(forces[2*i], forces[2*i+1]), dt);
     }
 

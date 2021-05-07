@@ -11,6 +11,7 @@
 #include "EntityRenderer.h"
 #include "Boid.h"
 #include <omp.h>
+#include "compute_forces.h"
 
 class State {
 public:
@@ -23,15 +24,14 @@ private:
     GLuint Width, Height;
     std::vector<Boid *> boids;
 
-    std::vector<GLfloat> position_velocity;
-    GLfloat *forces;
+    std::vector<float> position_velocity;
+    float *forces;
     //GLint *grid_cell_sizes;
     std::vector<int> *grid_cell_sizes;
 
     int indices[N_ROWS * N_COLS];
     
-    //GLfloat *inputs;
-    GLint *inputs;
+    int *position_velocity_indices;
 
     //std::vector<int> grid[N_ROWS * N_COLS];
     std::vector<int> *grid[N_ROWS][N_COLS];
