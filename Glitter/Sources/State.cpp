@@ -92,16 +92,16 @@ void State::Update(GLfloat dt) {
         float s = glfwGetTime();
         qt->clear();
         float e = glfwGetTime();
-        //printf("clear time: %.3f\n", e-s);
+        printf("clear time: %.3f\n", e-s);
         s = glfwGetTime();
+        #pragma omp parallel for num_threads(THREADS)
         for (size_t i = 0; i < NUM_BOIDS; i++) {
             int boid_index = reordered_boids[i];
             Boid *b = boids[boid_index];
             qt->insert(b);
         }
-
-        //e = glfwGetTime();
-        //printf("update time: %.3f\n", e-s);
+        e = glfwGetTime();
+        printf("update time: %.3f\n", e-s);
         do_update = 0;
     }
     do_update += 1;
@@ -123,7 +123,7 @@ void State::Update(GLfloat dt) {
 
             int current_child = node->first_element;
             for (int j = 0; j < node->num_boids; j++) {
-                QuadTreeElem_t *elem = qt->elements[current_child];
+                QuadTreeElem_t *elem = &qt->elements[current_child];
                 Boid *b = boids[elem->boid];
                 positions_velocities[4 * p_v_index] = b->position.x;
                 positions_velocities[4 * p_v_index + 1] = b->position.y;
@@ -154,7 +154,7 @@ void State::Update(GLfloat dt) {
 
             int current_child = node->first_element;
             for (int j = 0; j < node->num_boids; j++) {
-                QuadTreeElem_t *elem = qt->elements[current_child];
+                QuadTreeElem_t *elem = &qt->elements[current_child];
                 indices[j] = elem->boid;
     
                 current_child = elem->next;
