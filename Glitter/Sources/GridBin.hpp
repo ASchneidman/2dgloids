@@ -19,7 +19,6 @@ class Grid{
         bool insert(Boid *b);
         void query(Boid *b, std::function<void(Boid *)> &iterate_function);
         void clear();
-        // void visualize();
 
     private:
 
@@ -35,15 +34,15 @@ class GridBin{
         static const int gridDim_M = 100;
         static const int gridDim_N = 10;
 
+        Grid *get_grid(int i, int j);
         Grid *which_grid(Boid *b);
         bool insert(Boid *b);
         void query(Boid *b, std::function<void(Boid *)> &iterate_function);
-        // void visualize();
         void clear();
-
-    private:
         
+    private:
         Grid *grids[gridDim_M][gridDim_N];
+        
 };
 
 

@@ -39,10 +39,7 @@ void State::Init() {
 
     std::uniform_real_distribution<float> posDistX(0.0f, this->Width-1);
     std::uniform_real_distribution<float> posDistY(0.0f, this->Height-1);
-
-
     std::uniform_real_distribution<float> randSpeed(0.0f, BOID_SPEED);
-
 
     for (int i = 0; i < NUM_BOIDS; i++) {
         glm::vec2 initPos = glm::vec2(posDistX(generator), posDistY(generator));
@@ -59,71 +56,79 @@ void State::Init() {
 void State::Update(GLfloat dt) {
     glm::vec2 forces[NUM_BOIDS];
     grid->clear();
-    for (Boid *b : boids) {
+    for (Boid *b : boids) { // TODO: parallelize    
         grid->insert(b);
     }
-    #pragma omp parallel for schedule(dynamic) num_threads(NUM_THREADS)
-    for (size_t j = 0; j < this->boids.size(); j++) {
-        Boid *b = boids[j];
+    // #pragma omp declare reduction (merge : std::vector<Boid* > : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+    // #pragma omp parallel for reduction(merge: grid)
+    // for(int i=0; i<NUM_BOIDS; i++) {
+    // // for (Boid *b : boids) {    
+    //     grid->insert(boids[i]);
+    // }
 
-        glm::vec2 forceCollision(0.0f, 0.0f);
-        glm::vec2 forceAlign(0.0f);
-        glm::vec2 forcePos(0.0f);
-        glm::vec2 force(0.0f);
+    #pragma omp parallel for schedule(dynamic) num_threads(NUM_THREADS) collapse(2)
+    for (int i = 0; i < grid->gridDim_M; i++) {
+        for (int j = 0; j < grid->gridDim_N; j++) {
+            Grid *curr = grid->get_grid(i, j); // check type
+            for (Boid *b : *curr->boids) {
+                glm::vec2 forceCollision(0.0f, 0.0f);
+                glm::vec2 forceAlign(0.0f);
+                glm::vec2 forcePos(0.0f);
+                glm::vec2 force(0.0f);
+                glm::vec2 forceRand(0.0f);
 
-        glm::vec2 flockCenter(0.0, 0.0);
-        glm::vec2 flockHeading(0.0, 0.0);
+                glm::vec2 flockCenter(0.0, 0.0);
+                glm::vec2 flockHeading(0.0, 0.0);
 
-        int numClose = 0;
+                int numClose = 0;
 
-        glm::vec3 mincolor = b->natural_color;
+                std::function<void(Boid*)> lambda = [&](Boid *other) {  
+                    if (other->index == b->index) {
+                        return;
+                    }
 
-         std::function<void(Boid*)> lambda = [&](Boid *other) {
-            if (other->index == b->index) {
-                return;
-            }
+                    // Collision avoidance
+                    float dist = glm::distance(other->position, b->position);
+                    // dir is already normalized, so dont need to take norm
+                    if (dist < nearby_dist) {
+                        flockCenter += other->position;
+                        flockHeading += other->velocity;
+                        numClose += 1;
+                        float scaling = (1.0f / (dist * dist));
+                        glm::vec2 dir = glm::normalize(b->position - other->position);
+                        forceCollision += dir * scaling;
+                    }
+                };
 
-            // Collision avoidance
-            float dist = glm::distance(other->position, b->position);
-            // dir is already normalized, so dont need to take norm
-            if (dist < nearby_dist) {
-                if (other->index < b->index) {
-                    mincolor = other->color;
+                grid->query(b, lambda);
+
+                if (numClose > 0) {
+                    forceAlign = flockHeading;
+                    forceAlign /= numClose;
+
+                    flockCenter /= numClose;
+                    forcePos = (flockCenter - b->position);
+
+                    forceCollision = b->SteerToward(forceCollision);
+                    forceCollision *= collision_weight;
+
+                    forceAlign = b->SteerToward(forceAlign);
+                    forceAlign *= align_weight;
+
+                    forcePos = b->SteerToward(forcePos);
+                    forcePos *= position_weight;
+
+                    force = forceCollision + forceAlign + forcePos;
+
                 }
 
-                flockCenter += other->position;
-                flockHeading += other->velocity;
-                numClose += 1;
-                float scaling = (1.0f / (dist * dist));
-                glm::vec2 dir = glm::normalize(b->position - other->position);
-                forceCollision += dir * scaling;
+                forces[b->index] = force;
+
             }
-        };
-
-        grid->query(b, lambda);
-
-        if (numClose > 0) {
-            forceAlign = flockHeading;
-            forceAlign /= numClose;
-
-            flockCenter /= numClose;
-            forcePos = (flockCenter - b->position);
-
-            forceCollision = b->SteerToward(forceCollision);
-            forceCollision *= collision_weight;
-
-            forceAlign = b->SteerToward(forceAlign);
-            forceAlign *= align_weight;
-
-            forcePos = b->SteerToward(forcePos);
-            forcePos *= position_weight;
-
-            force = forceCollision + forceAlign + forcePos;
-
         }
 
-        forces[b->index] = force;
     }
+
     for (Boid *b : this->boids) {
         b->Update(forces[b->index], dt);
     }
