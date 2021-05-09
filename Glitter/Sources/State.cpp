@@ -70,7 +70,6 @@ void State::Update(GLfloat dt) {
         glm::vec2 forceAlign(0.0f);
         glm::vec2 forcePos(0.0f);
         glm::vec2 force(0.0f);
-        glm::vec2 forceRand(0.0f);
 
         glm::vec2 flockCenter(0.0, 0.0);
         glm::vec2 flockHeading(0.0, 0.0);
@@ -122,12 +121,8 @@ void State::Update(GLfloat dt) {
             force = forceCollision + forceAlign + forcePos;
 
         }
-        float theta = randDir(generator);
-        forceRand = glm::vec2(glm::sin(theta), glm::cos(theta));
-        force += forceRand;
 
         forces[b->index] = force;
-        b->num_flockmates = numClose;
     }
     for (Boid *b : this->boids) {
         b->Update(forces[b->index], dt);

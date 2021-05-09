@@ -34,9 +34,9 @@
 #define NUM_THREADS 8
 
 // The Width of the screen
-const unsigned int SCREEN_WIDTH = 1700;
+const unsigned int SCREEN_WIDTH = 1600;
 // The height of the screen
-const unsigned int SCREEN_HEIGHT = 900;
+const unsigned int SCREEN_HEIGHT = 800;
 
 extern float max_velocity;
 extern float nearby_dist;

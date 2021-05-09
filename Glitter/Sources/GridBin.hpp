@@ -32,7 +32,7 @@ class GridBin{
         ~GridBin();
         
         // screen is divided equally into MxN matrix grid; change these to change grid
-        static const int gridDim_M = 20;
+        static const int gridDim_M = 100;
         static const int gridDim_N = 10;
 
         Grid *which_grid(Boid *b);
