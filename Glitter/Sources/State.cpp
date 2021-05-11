@@ -12,8 +12,26 @@
 #include <omp.h>
 #include <glm/gtx/color_space.hpp>
 #include <GLFW/glfw3.h>
+#include "ispc_query.h"
 
 #define SIGN(x) ((x) < 0.0f ? -1.0f : 1.0f)
+
+using namespace ispc;
+
+/*
+extern void compute_forces(int num_boids, 
+                      float radius,
+                        float out_forces[], 
+                        float positions_velocities[],
+                        int positions_velocity_indices[],
+                        Node nodes[],
+                        float bounds[],
+                        float max_velocity,
+                        float max_force,
+                        float collision_weight,
+                        float align_weight,
+                        float position_weight);
+*/
 
 int do_update = 0;
 int update_frames = 1;
@@ -55,106 +73,109 @@ void State::Init() {
     }
 
     qt = new QuadTreeHead(glm::vec2(0.0f, Width), glm::vec2(0.0f, Height), &boids);
+
+
+    forces = new float[NUM_BOIDS * 2];
+    positions_velocities = new float[NUM_BOIDS * 4];
+    position_velocity_indices = new int[NUM_BOIDS];
+
+    for (int i = 0; i < NUM_BOIDS; i++) {
+        reordered_boids[i] = i;
+    }
 }
 
 
 void State::Update(GLfloat dt) {
-    glm::vec2 forces[NUM_BOIDS];
+    //glm::vec2 forces[NUM_BOIDS];
 
     if (do_update % update_frames == 0) {
-        float s = glfwGetTime();
+        //float s = glfwGetTime();
         qt->clear();
-        float e = glfwGetTime();
-        printf("clear time: %.3f\n", e-s);
-        //#pragma omp parallel for schedule(dynamic) num_threads(THREADS)
-        s = glfwGetTime();
-        for (size_t i = 0; i < boids.size(); i++) {
-            Boid *b = boids[i];
+        //float e = glfwGetTime();
+        //printf("clear time: %.3f\n", e-s);
+        //s = glfwGetTime();
+        #pragma omp parallel for schedule(dynamic, 100) num_threads(THREADS)
+        for (size_t i = 0; i < NUM_BOIDS; i++) {
+            int boid_index = reordered_boids[i];
+            //int boid_index = i;
+            Boid *b = boids[boid_index];
             qt->insert(b);
         }
-        e = glfwGetTime();
-        printf("update time: %.3f\n", e-s);
+        //e = glfwGetTime();
+        //printf("update time: %.3f\n", e-s);
         do_update = 0;
     }
     do_update += 1;
 
-    float s = glfwGetTime();
-    #pragma omp parallel for schedule(dynamic, 100) num_threads(THREADS)
+    //float s = glfwGetTime();
+    // Build datastructures for ispc
+    Node *nodes = new Node[qt->nodes.size()];
+    
+    int p_v_index = 0;
     for (int i = 0; i < qt->nodes.size(); i++) {
         QuadTree_t *node = qt->nodes[i];
+
+        nodes[i].is_subdivided = node->is_subdivided;
+        nodes[i].num_boids = node->num_boids;
+        nodes[i].first_child = node->first_child;
+
         if (node->is_subdivided == false) {
+            nodes[i].boids_start_index = p_v_index;
+
             int current_child = node->first_element;
-            for (int i = 0; i < node->num_boids; i++) {
-                QuadTreeElem_t *elem = qt->elements[current_child];
+            for (int j = 0; j < node->num_boids; j++) {
+                QuadTreeElem_t *elem = &qt->elements[current_child];
                 Boid *b = boids[elem->boid];
+                positions_velocities[4 * p_v_index] = b->position.x;
+                positions_velocities[4 * p_v_index + 1] = b->position.y;
+                positions_velocities[4 * p_v_index + 2] = b->velocity.x;
+                positions_velocities[4 * p_v_index + 3] = b->velocity.y;
 
-                glm::vec2 forceCollision(0.0f, 0.0f);
-                glm::vec2 forceAlign(0.0f);
-                glm::vec2 forcePos(0.0f);
-                glm::vec2 force(0.0f);
-                glm::vec2 forceRand(0.0f);
+                position_velocity_indices[b->index] = p_v_index;
 
-                glm::vec2 flockCenter(0.0, 0.0);
-                glm::vec2 flockHeading(0.0, 0.0);
-                int numClose = 0;
+                reordered_boids[elem->boid] = p_v_index;
 
-                std::vector<Boid *> found_boids;
-                qt->query(b, found_boids);
-                for (Boid *other : found_boids) {
-                    if (other->index == b->index) {
-                        continue;
-                    }
-                    // Collision avoidance
-                    float dist = glm::distance(other->position, b->position);
-                    if (dist < nearby_dist) {
-                        flockCenter += other->position;
-                        flockHeading += other->velocity;
-                        numClose += 1;
-                        float scaling = (1.0f / (dist * dist));
-                        glm::vec2 dir = glm::normalize(b->position - other->position);
-                        forceCollision += dir * scaling;
-                    }
-                }
-            
-                if (numClose > 0) {
-                    forceAlign = flockHeading;
-                    forceAlign /= numClose;
-
-                    flockCenter /= numClose;
-                    forcePos = (flockCenter - b->position);
-
-                    forceCollision = b->SteerToward(forceCollision);
-                    forceCollision *= collision_weight;
-
-                    forceAlign = b->SteerToward(forceAlign);
-                    forceAlign *= align_weight;
-
-                    forcePos = b->SteerToward(forcePos);
-                    forcePos *= position_weight;
-
-                    force = forceCollision + forceAlign + forcePos;
-
-                }
-
-
-                glm::vec2 forceGravity(0.0f, 1000.0f);
-                force += forceGravity * gravity_weight;
-
-                forces[b->index] = force;
-
+                p_v_index += 1;
 
                 current_child = elem->next;
             }
         }
     }
-    float e = glfwGetTime();
-    printf("Query time: %.3f\n", e-s);
+    float bbox[4] = {qt->bounds_x.x, qt->bounds_x.y, qt->bounds_y.x, qt->bounds_y.y};
+    
+    //float e = glfwGetTime();
+    //printf("ISPC data struct building time: %.3f\n", e-s);
+
+    //s = glfwGetTime();
+    #pragma omp parallel for schedule(dynamic, 250) num_threads(THREADS)
+    for (int i = 0; i < qt->nodes.size(); i++) {
+        QuadTree_t *node = qt->nodes[i];
+        if (node->is_subdivided == false) {
+            int indices[node->num_boids];
+
+            int current_child = node->first_element;
+            for (int j = 0; j < node->num_boids; j++) {
+                QuadTreeElem_t *elem = &qt->elements[current_child];
+                indices[j] = elem->boid;
+    
+                current_child = elem->next;
+            }
+            compute_forces(indices, node->num_boids, nearby_dist, forces, positions_velocities, position_velocity_indices, nodes, bbox, max_velocity, MAX_FORCE, collision_weight, align_weight, position_weight);
+
+        }
+    }
+
+    delete[] nodes;
+
+    //e = glfwGetTime();
+
+    //printf("ISPC query time: %.3f\n", e-s);
 
 
     #pragma omp parallel for schedule(static) num_threads(THREADS)
     for (size_t i = 0; i < boids.size(); i++) {
         Boid *b = boids[i];
-        b->Update(forces[b->index], dt);
+        b->Update(glm::vec2(forces[2 * b->index], forces[2 * b->index + 1]), dt);
     }
 
 }

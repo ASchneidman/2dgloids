@@ -11,6 +11,7 @@
 #include "EntityRenderer.h"
 #include "Boid.h"
 #include "QuadTree.hpp"
+#include "ispc_query.h"
 
 class State {
 public:
@@ -23,6 +24,12 @@ private:
     GLuint Width, Height;
     std::vector<Boid *> boids;
     QuadTreeHead *qt = NULL;
+
+    float *forces;
+    float *positions_velocities;
+    int *position_velocity_indices;
+
+    int reordered_boids[NUM_BOIDS];
 };
 
 

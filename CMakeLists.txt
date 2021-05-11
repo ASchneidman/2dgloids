@@ -24,7 +24,8 @@ include_directories(Glitter/Headers/
 
 file(GLOB VENDORS_SOURCES Glitter/Vendor/glad/src/glad.c)
 file(GLOB PROJECT_HEADERS Glitter/Headers/*.hpp)
-file(GLOB PROJECT_SOURCES Glitter/Sources/*.cpp)
+file(GLOB PROJECT_SOURCES Glitter/Sources/*.cpp
+                          Glitter/Sources/*.ispc)
 file(GLOB PROJECT_SHADERS Glitter/Shaders/*.comp
                           Glitter/Shaders/*.frag
                           Glitter/Shaders/*.geom
@@ -40,11 +41,20 @@ source_group("Shaders" FILES ${PROJECT_SHADERS})
 source_group("Sources" FILES ${PROJECT_SOURCES})
 source_group("Vendors" FILES ${VENDORS_SOURCES})
 
+add_custom_target(run ALL
+    DEPENDS ispc_query.o)
+
+add_custom_command(OUTPUT ispc_query.o
+                   COMMAND ispc ${CMAKE_SOURCE_DIR}/Glitter/Sources/ispc_query.ispc -o ispc_query.o -h ../Glitter/Sources/ispc_query.h
+                   DEPENDS ${CMAKE_SOURCE_DIR}/Glitter/Sources/ispc_query.ispc)
+
 add_definitions(-DGLFW_INCLUDE_NONE
                 -DPROJECT_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\")
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS}
                                ${PROJECT_SHADERS} ${PROJECT_CONFIGS}
-                               ${VENDORS_SOURCES} Glitter/Sources/State.cpp Glitter/Sources/State.h Glitter/Sources/shader.cpp Glitter/Sources/shader.h Glitter/Sources/resourcemanager.cpp Glitter/Sources/resourcemanager.h Glitter/Sources/EntityRenderer.cpp Glitter/Sources/EntityRenderer.h Glitter/Sources/Boid.cpp Glitter/Sources/Boid.h Glitter/Sources/QuadTree.hpp Glitter/Sources/QuadTree.cpp)
+                               ${VENDORS_SOURCES} ispc_query.o
+                               Glitter/Sources/State.cpp Glitter/Sources/State.h Glitter/Sources/shader.cpp Glitter/Sources/shader.h Glitter/Sources/resourcemanager.cpp Glitter/Sources/resourcemanager.h Glitter/Sources/EntityRenderer.cpp Glitter/Sources/EntityRenderer.h Glitter/Sources/Boid.cpp Glitter/Sources/Boid.h Glitter/Sources/QuadTree.hpp Glitter/Sources/QuadTree.cpp) 
+                               
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC
                       glfw
@@ -58,6 +68,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 if (OPENMP_FOUND)
 endif()
 
+                   
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Glitter/Shaders $<TARGET_FILE_DIR:${PROJECT_NAME}>
