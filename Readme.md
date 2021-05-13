@@ -19,17 +19,27 @@ To run after buiding from your build directory, run
 
 The boid controls are:
 
+
 W: increase maximum velocity
+
 S: decrease maximum velocity
 
+
 Up arrow: increase boid view distance
+
 Down arrow: decrease boid view distance
 
+
 1: increase collision avoidance weight
+
 2: decrease collision avoidance weight
 
+
 3: increase alignment weight
+
 4: decrease alignment weight
 
+
 5: increase position weight
+
 6: decrease position weight
